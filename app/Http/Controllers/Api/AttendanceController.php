@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Booking;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -73,6 +74,11 @@ class AttendanceController extends Controller
         ]);
 
         $userId = $data['user_id'] ?? Booking::findOrFail($data['booking_id'])->user_id;
+
+        $person = User::findOrFail($userId);
+        if (! $person->is_active) {
+            return response()->json(['message' => $person->name.' is deactivated and cannot be checked in.'], 422);
+        }
 
         $attendance = Attendance::create([
             'user_id' => $userId,

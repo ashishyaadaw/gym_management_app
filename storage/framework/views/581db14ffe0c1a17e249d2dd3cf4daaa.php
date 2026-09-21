@@ -24,7 +24,7 @@
     </p>
 
     <?php if(app()->environment('local')): ?>
-        <div class="mt-4 pt-3 border-top" style="border-color: var(--gf-line-soft) !important">
+        <!-- <div class="mt-4 pt-3 border-top" style="border-color: var(--gf-line-soft) !important">
             <div class="gf-eyebrow mb-1">Demo logins</div>
             <p class="small text-secondary mb-2">Every demo account uses the password <code>password</code>.</p>
             <div class="d-flex flex-wrap gap-2">
@@ -32,7 +32,7 @@
                     <button type="button" class="btn btn-light btn-sm js-demo" data-email="<?php echo e($key); ?>@gymfit.test"><?php echo e($label); ?></button>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
-        </div>
+        </div> -->
     <?php endif; ?>
 <?php $__env->stopSection(); ?>
 

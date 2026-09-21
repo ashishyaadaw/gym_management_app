@@ -1,20 +1,20 @@
-@extends('layouts.app')
 
-@section('title', 'Members')
 
-@section('content')
-    @php($canWrite = in_array(auth()->user()->role, ['admin', 'receptionist'], true))
+<?php $__env->startSection('title', 'Members'); ?>
+
+<?php $__env->startSection('content'); ?>
+    <?php ($canWrite = in_array(auth()->user()->role, ['admin', 'receptionist'], true)); ?>
 
     <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
         <div>
             <h1 class="gf-page-title">Members</h1>
             <p class="text-secondary small mb-0">Membership status, renewals and WhatsApp reminders</p>
         </div>
-        @if ($canWrite)
+        <?php if($canWrite): ?>
             <button class="btn btn-primary d-inline-flex align-items-center justify-content-center gap-2" type="button" id="btn-add-member">
                 <svg class="gf-ico"><use href="#i-plus"/></svg> Add Member
             </button>
-        @endif
+        <?php endif; ?>
     </div>
 
     <div class="row g-2 mb-3">
@@ -26,11 +26,11 @@
         </div>
         <div class="col-12 col-lg-7">
             <div id="member-filters" class="d-flex flex-wrap gap-2">
-                @foreach (['all' => 'All', 'active' => 'Active', 'expiring' => 'Expiring', 'expired' => 'Expired', 'deactivated' => 'Deactivated'] as $key => $label)
-                    <button type="button" class="btn btn-light btn-sm gf-chip {{ $key === 'all' ? 'active' : '' }}" data-status="{{ $key }}">
-                        {{ $label }} <span class="badge text-bg-secondary ms-1" data-count="{{ $key }}">0</span>
+                <?php $__currentLoopData = ['all' => 'All', 'active' => 'Active', 'expiring' => 'Expiring', 'expired' => 'Expired', 'deactivated' => 'Deactivated']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <button type="button" class="btn btn-light btn-sm gf-chip <?php echo e($key === 'all' ? 'active' : ''); ?>" data-status="<?php echo e($key); ?>">
+                        <?php echo e($label); ?> <span class="badge text-bg-secondary ms-1" data-count="<?php echo e($key); ?>">0</span>
                     </button>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
     </div>
@@ -41,8 +41,8 @@
         </div>
     </div>
 
-    @if ($canWrite)
-        {{-- Add member --}}
+    <?php if($canWrite): ?>
+        
         <div class="modal fade" id="add-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <form id="add-form" class="modal-content" novalidate>
@@ -86,7 +86,7 @@
                                 <div class="small mt-1 js-coupon-msg"></div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label small fw-medium">Paid now ({{ config('gym.currency') }})</label>
+                                <label class="form-label small fw-medium">Paid now (<?php echo e(config('gym.currency')); ?>)</label>
                                 <input name="paid" type="number" min="0" step="1" class="form-control" required>
                             </div>
                             <div class="col-sm-6">
@@ -118,7 +118,7 @@
             </div>
         </div>
 
-        {{-- Renew membership --}}
+        
         <div class="modal fade" id="renew-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <form id="renew-form" class="modal-content" novalidate>
@@ -157,7 +157,7 @@
                                 <div class="small mt-1 js-coupon-msg"></div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label small fw-medium">Paid now ({{ config('gym.currency') }})</label>
+                                <label class="form-label small fw-medium">Paid now (<?php echo e(config('gym.currency')); ?>)</label>
                                 <input name="paid" type="number" min="0" step="1" class="form-control" required>
                             </div>
                             <div class="col-sm-6">
@@ -180,10 +180,12 @@
                 </form>
             </div>
         </div>
-    @endif
-@endsection
+    <?php endif; ?>
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-    <script>window.MembersPage = { canWrite: @json($canWrite), canDeactivate: @json(auth()->user()->isAdmin()) };</script>
-    <script src="{{ asset('js/pages/members.js') }}?v={{ filemtime(public_path('js/pages/members.js')) }}"></script>
-@endpush
+<?php $__env->startPush('scripts'); ?>
+    <script>window.MembersPage = { canWrite: <?php echo json_encode($canWrite, 15, 512) ?>, canDeactivate: <?php echo json_encode(auth()->user()->isAdmin(), 15, 512) ?> };</script>
+    <script src="<?php echo e(asset('js/pages/members.js')); ?>?v=<?php echo e(filemtime(public_path('js/pages/members.js'))); ?>"></script>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\00_LARAVEL_PROJECT\gym-management-laravel\gym-management\resources\views/members.blade.php ENDPATH**/ ?>

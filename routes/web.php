@@ -168,6 +168,10 @@ Route::middleware('auth')->group(function () {
             // User management (members, trainers, receptionists, admins)
             Route::apiResource('users', UserController::class);
 
+            // Switch a member's account off / on (front desk can add and renew, only the admin can deactivate)
+            Route::post('/members/{member}/deactivate', [MemberController::class, 'deactivate']);
+            Route::post('/members/{member}/activate', [MemberController::class, 'activate']);
+
             // Staff management, attendance and payroll
             Route::get('/staff', [StaffController::class, 'index']);
             Route::post('/staff', [StaffController::class, 'store']);

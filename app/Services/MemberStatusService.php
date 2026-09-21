@@ -58,6 +58,11 @@ class MemberStatusService
                 $m->open_plans > 0,
             );
 
+            // A deactivated account is its own group, whatever its plan says.
+            if (! $m->is_active) {
+                $status = 'deactivated';
+            }
+
             return [
                 'id' => $m->id,
                 'name' => $m->name,
@@ -85,6 +90,7 @@ class MemberStatusService
             'expiring' => $by->get('expiring', 0),
             'expired' => $by->get('expired', 0),
             'none' => $by->get('none', 0),
+            'deactivated' => $by->get('deactivated', 0),
         ];
     }
 }

@@ -150,8 +150,8 @@
     return '<span class="gf-pill gf-pill--' + key + '">' + (METHOD_LABEL[key] || 'Other') + '</span>';
   };
 
-  var STATUS_LABEL = { active: 'Active', expiring: 'Expiring', expired: 'Expired', none: 'No plan' };
-  /** Membership status pill: active / expiring / expired / none. */
+  var STATUS_LABEL = { active: 'Active', expiring: 'Expiring', expired: 'Expired', none: 'No plan', deactivated: 'Deactivated' };
+  /** Membership status pill: active / expiring / expired / none / deactivated. */
   App.statusPill = function (status) {
     return '<span class="gf-pill gf-pill--' + App.esc(status) + '">' + (STATUS_LABEL[status] || App.esc(status)) + '</span>';
   };

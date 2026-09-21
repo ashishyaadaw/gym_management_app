@@ -88,6 +88,10 @@ class MemberController extends Controller
     {
         abort_unless($member->isMember(), 404);
 
+        if (! $member->is_active) {
+            return response()->json(['message' => $member->name.' is deactivated. Activate the account before renewing.'], 422);
+        }
+
         $data = $request->validate([
             'membership_plan_id' => 'required|exists:membership_plans,id',
             'paid' => 'required|numeric|min:0',
@@ -106,5 +110,31 @@ class MemberController extends Controller
         $this->billing->enroll($member, $plan, $start, (float) $data['paid'], $data['method'], $data['coupon_code'] ?? null);
 
         return response()->json(['id' => $member->id]);
+    }
+
+    /** Switch a member's account off. Everything they have (plans, payments, attendance) is kept. */
+    public function deactivate(User $member)
+    {
+        return $this->setActive($member, false);
+    }
+
+    /** Switch a deactivated member's account back on. */
+    public function activate(User $member)
+    {
+        return $this->setActive($member, true);
+    }
+
+    private function setActive(User $member, bool $active)
+    {
+        abort_unless($member->isMember(), 404);
+
+        $member->update(['is_active' => $active]);
+
+        if (! $active) {
+            // Sign them out everywhere: the session guard only checks is_active at login.
+            DB::table('sessions')->where('user_id', $member->id)->delete();
+        }
+
+        return response()->json(['id' => $member->id, 'is_active' => $active]);
     }
 }

@@ -3,6 +3,7 @@ $(function () {
 
   var esc = App.esc;
   var canWrite = !!(window.MembersPage && window.MembersPage.canWrite);
+  var canDeactivate = !!(window.MembersPage && window.MembersPage.canDeactivate);
 
   var $list = $('#member-list');
   var $search = $('#member-search');
@@ -13,12 +14,13 @@ $(function () {
 
   // ---------- List ----------
   function row(m) {
+    var off = m.status === 'deactivated';
     var sub = m.plan ? esc(m.plan) : 'No active plan';
     var ends = m.ends_on
-      ? (m.status === 'expired' ? 'Expired ' : 'Ends ') + esc(App.day(m.ends_on)) + (m.days_left !== null ? ' · ' + esc(App.daysLeft(m.days_left)) : '')
+      ? (m.days_left !== null && m.days_left < 0 ? 'Expired ' : 'Ends ') + esc(App.day(m.ends_on)) + (m.days_left !== null ? ' · ' + esc(App.daysLeft(m.days_left)) : '')
       : '';
 
-    return '<div class="gf-list-item d-flex flex-wrap align-items-center gap-2 gap-sm-3 py-3">' +
+    return '<div class="gf-list-item d-flex flex-wrap align-items-center gap-2 gap-sm-3 py-3' + (off ? ' opacity-75' : '') + '">' +
       '<span class="gf-avatar">' + esc(App.initials(m.name)) + '</span>' +
       '<div class="flex-grow-1" style="min-width:9rem">' +
         '<div class="fw-semibold gf-truncate">' + esc(m.name) + '</div>' +
@@ -27,11 +29,16 @@ $(function () {
       '<div class="d-flex flex-column align-items-start align-items-sm-end gap-1">' + App.statusPill(m.status) +
         (m.due > 0 ? '<span class="small" style="color:#fbbf24">Due ' + esc(App.money(m.due)) + '</span>' : '') + '</div>' +
       '<div class="d-flex gap-1 ms-auto">' +
-        (canWrite ? '<button class="btn btn-light btn-sm js-checkin" data-id="' + esc(m.id) + '" title="Check in">' +
+        (canWrite && !off ? '<button class="btn btn-light btn-sm js-checkin" data-id="' + esc(m.id) + '" title="Check in">' +
           '<svg class="gf-ico gf-ico--sm"><use href="#i-check"/></svg></button>' : '') +
-        (canWrite ? '<button class="btn btn-light btn-sm js-renew" data-id="' + esc(m.id) + '" title="Renew membership">' +
+        (canWrite && !off ? '<button class="btn btn-light btn-sm js-renew" data-id="' + esc(m.id) + '" title="Renew membership">' +
           '<svg class="gf-ico gf-ico--sm"><use href="#i-refresh"/></svg><span class="gf-hide-xs"> Renew</span></button>' : '') +
-        App.whatsappButton(m, null, false) +
+        (off ? '' : App.whatsappButton(m, null, false)) +
+        (canDeactivate ? (off
+          ? '<button class="btn btn-light btn-sm js-activate" data-id="' + esc(m.id) + '" title="Activate account">' +
+            '<svg class="gf-ico gf-ico--sm"><use href="#i-login"/></svg><span class="gf-hide-xs"> Activate</span></button>'
+          : '<button class="btn btn-light btn-sm js-deactivate" data-id="' + esc(m.id) + '" title="Deactivate account">' +
+            '<svg class="gf-ico gf-ico--sm"><use href="#i-ban"/></svg></button>') : '') +
       '</div></div>';
   }
 
@@ -68,6 +75,22 @@ $(function () {
     App.post('/attendances/check-in', { user_id: m.id })
       .done(function () { App.flash(m.name + ' checked in at ' + App.time(new Date()) + '.'); })
       .fail(function (xhr) { App.flash(App.errorMessage(xhr, 'Check-in failed.'), 'danger'); });
+  });
+
+  // ---------- Deactivate / activate (admin only) ----------
+  $list.on('click', '.js-deactivate', function () {
+    var m = members[$(this).data('id')];
+    if (!window.confirm('Deactivate ' + m.name + '? They will be signed out and cannot log in, check in or renew until you activate them again. Their history is kept.')) { return; }
+    App.post('/members/' + m.id + '/deactivate')
+      .done(function () { App.flash(m.name + ' deactivated.'); load(); })
+      .fail(function (xhr) { App.flash(App.errorMessage(xhr, 'Could not deactivate the member.'), 'danger'); });
+  });
+
+  $list.on('click', '.js-activate', function () {
+    var m = members[$(this).data('id')];
+    App.post('/members/' + m.id + '/activate')
+      .done(function () { App.flash(m.name + ' activated.'); load(); })
+      .fail(function (xhr) { App.flash(App.errorMessage(xhr, 'Could not activate the member.'), 'danger'); });
   });
 
   if (!canWrite) { load(); return; }

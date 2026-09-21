@@ -231,6 +231,7 @@ class BillingService
         MemberPlan::where('status', 'active')
             ->where('auto_renew', true)
             ->whereDate('next_billing_date', '<=', now())
+            ->whereHas('user', fn ($q) => $q->where('is_active', true)) // no invoices for deactivated accounts
             ->with('plan')
             ->each(function (MemberPlan $mp) use (&$renewed) {
                 $plan = $mp->plan;

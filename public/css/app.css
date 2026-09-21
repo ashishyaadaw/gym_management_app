@@ -255,6 +255,7 @@ h1, .h1, h2, .h2, h3, .h3 { font-weight: 800; letter-spacing: -.01em; }
 .gf-pill--expiring { background: rgba(251, 191, 36, .14); color: #fbbf24; }
 .gf-pill--expired { background: rgba(248, 113, 113, .14); color: #f87171; }
 .gf-pill--none { background: rgba(255, 255, 255, .08); color: #a1a1aa; }
+.gf-pill--deactivated { background: rgba(255, 255, 255, .05); color: #71717a; border: 1px dashed rgba(255, 255, 255, .18); }
 .gf-pill--low { background: rgba(248, 113, 113, .14); color: #f87171; }
 
 .gf-avatar {
