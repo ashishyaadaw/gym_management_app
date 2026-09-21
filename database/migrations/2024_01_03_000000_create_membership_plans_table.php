@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            // monthly | yearly | pay_per_class
+            // monthly | yearly | pay_per_class (quarterly and half_yearly are added by a later migration)
             $table->enum('billing_cycle', ['monthly', 'yearly', 'pay_per_class']);
             $table->decimal('price', 10, 2);
             $table->unsignedInteger('class_credits')->nullable(); // null = unlimited

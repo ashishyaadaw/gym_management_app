@@ -57,9 +57,9 @@
                             <div class="col-sm-6">
                                 <label class="form-label small fw-medium">Billing cycle *</label>
                                 <select name="billing_cycle" class="form-select" required>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
-                                    <option value="pay_per_class">Pay per class</option>
+                                    @foreach (\App\Models\MembershipPlan::CYCLES as $value => $cycle)
+                                        <option value="{{ $value }}" data-days="{{ $cycle['days'] }}">{{ $cycle['label'] }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-sm-6">

@@ -237,11 +237,16 @@ $(function () {
       v('available_from', p.available_from); v('available_until', p.available_until);
       $form.find('[name="is_active"]').prop('checked', p.is_active);
     } else {
-      v('duration_days', 30);
+      $form.find('[name="billing_cycle"]').trigger('change');   // reset() leaves the first cycle selected, so start from its length
       $form.find('[name="is_active"]').prop('checked', true);
     }
     App.modal('#plan-modal').show();
   }
+
+  // Picking a cycle fills in the membership length that goes with it (blank for a class pack). It stays editable.
+  $form.find('[name="billing_cycle"]').on('change', function () {
+    $form.find('[name="duration_days"]').val($(this).find('option:selected').data('days') || '');
+  });
 
   $('#btn-new-plan').on('click', function () { openPlanForm(null); });
   $list.on('click', '.js-edit', function () { openPlanForm(planById($(this).data('id'))); });

@@ -1,0 +1,3 @@
+<?php $__currentLoopData = \App\Models\MembershipPlan::CYCLES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $cycle): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<option value="<?php echo e($value); ?>" data-days="<?php echo e($cycle['days']); ?>"><?php echo e($cycle['label']); ?></option>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php /**PATH D:\00_LARAVEL_PROJECT\gym-management-laravel\gym-management\storage\framework\views/28fc5e3059c4a926a56a08d23621e52c.blade.php ENDPATH**/ ?>

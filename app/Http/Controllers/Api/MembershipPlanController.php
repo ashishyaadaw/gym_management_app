@@ -35,7 +35,11 @@ class MembershipPlanController extends Controller
 
     public function store(Request $request)
     {
-        $plan = MembershipPlan::create($request->validate($this->rules()));
+        $data = $request->validate($this->rules());
+        // Left blank, a plan runs for its cycle's usual length (a class pack has none and never expires).
+        $data['duration_days'] ??= MembershipPlan::CYCLES[$data['billing_cycle']]['days'];
+
+        $plan = MembershipPlan::create($data);
 
         return response()->json($this->withUsage($plan), 201);
     }
@@ -82,7 +86,7 @@ class MembershipPlanController extends Controller
         return [
             'name' => "$req|string|max:255",
             'description' => 'nullable|string',
-            'billing_cycle' => "$req|in:monthly,yearly,pay_per_class",
+            'billing_cycle' => "$req|in:".implode(',', array_keys(MembershipPlan::CYCLES)),
             'price' => "$req|numeric|min:0",
             'class_credits' => 'nullable|integer|min:0',
             'duration_days' => 'nullable|integer|min:1',

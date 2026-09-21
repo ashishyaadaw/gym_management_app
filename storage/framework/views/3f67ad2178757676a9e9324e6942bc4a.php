@@ -41,6 +41,25 @@
         </div>
     </div>
 
+    
+    <div class="modal fade" id="view-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h6">Member details</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="view-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                    <?php if($canWrite): ?>
+                        <button type="button" class="btn btn-primary js-edit-from-view" disabled>Edit details</button>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php if($canWrite): ?>
         
         <div class="modal fade" id="add-modal" tabindex="-1" aria-hidden="true">
@@ -93,18 +112,22 @@
                                 <label class="form-label small fw-medium">Balance due</label>
                                 <input class="form-control js-due" readonly value="—">
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-12">
                                 <label class="form-label small fw-medium">Email (optional)</label>
                                 <input name="email" type="email" class="form-control" placeholder="Only if they want an online login">
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label small fw-medium">Emergency contact</label>
-                                <input name="emergency_contact_phone" class="form-control" inputmode="numeric" placeholder="9876543211">
                             </div>
                             <div class="col-12">
                                 <div class="gf-card-inset p-3 small d-flex justify-content-between">
                                     <span class="text-secondary">Auto-calculated expiry</span>
                                     <span class="fw-bold js-expiry" style="color:var(--gf-gold)">—</span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="collapse" data-bs-target="#add-more" aria-expanded="false" aria-controls="add-more">
+                                    Member details — address, emergency contact, fitness &amp; health (optional)
+                                </button>
+                                <div class="collapse mt-3" id="add-more">
+                                    <div class="row g-3"><?php echo $__env->make('partials.member-profile-fields', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?></div>
                                 </div>
                             </div>
                         </div>
@@ -113,6 +136,36 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary">Add member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        
+        <div class="modal fade" id="edit-modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <form id="edit-form" class="modal-content" novalidate>
+                    <div class="modal-header">
+                        <h2 class="modal-title h6">Edit member</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-medium">Full name *</label>
+                                <input name="name" class="form-control" required>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-medium">Phone * (10 digits)</label>
+                                <input name="phone" class="form-control" inputmode="numeric" maxlength="10" required>
+                            </div>
+                            <?php echo $__env->make('partials.member-profile-fields', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                        </div>
+                        <p class="gf-error text-danger small mt-3 mb-0 d-none" role="alert"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
                     </div>
                 </form>
             </div>
@@ -184,7 +237,18 @@
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
-    <script>window.MembersPage = { canWrite: <?php echo json_encode($canWrite, 15, 512) ?>, canDeactivate: <?php echo json_encode(auth()->user()->isAdmin(), 15, 512) ?> };</script>
+    <script>
+        window.MembersPage = {
+            canWrite: <?php echo json_encode($canWrite, 15, 512) ?>,
+            canDeactivate: <?php echo json_encode(auth()->user()->isAdmin(), 15, 512) ?>,
+            labels: {
+                goal: <?php echo json_encode(\App\Models\MemberProfile::GOALS, 15, 512) ?>,
+                level: <?php echo json_encode(\App\Models\MemberProfile::LEVELS, 15, 512) ?>,
+                timing: <?php echo json_encode(\App\Models\MemberProfile::TIMINGS, 15, 512) ?>,
+                source: <?php echo json_encode(\App\Models\MemberProfile::SOURCES, 15, 512) ?>
+            }
+        };
+    </script>
     <script src="<?php echo e(asset('js/pages/members.js')); ?>?v=<?php echo e(filemtime(public_path('js/pages/members.js'))); ?>"></script>
 <?php $__env->stopPush(); ?>
 

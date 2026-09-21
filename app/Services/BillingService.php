@@ -209,7 +209,7 @@ class BillingService
 
     /**
      * Run daily: expire plans past end_date, and auto-renew plans that are
-     * due for billing today (monthly/yearly with auto_renew = true).
+     * due for billing today (any time-based cycle with auto_renew = true).
      * Intended to be invoked from the `billing:run` scheduled command.
      */
     public function runDailyBilling(): array

@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\Equipment;
 use App\Models\GymClass;
 use App\Models\MemberPlan;
+use App\Models\MemberProfile;
 use App\Models\MembershipPlan;
 use App\Models\Payment;
 use App\Models\Product;
@@ -64,11 +65,11 @@ class DatabaseSeeder extends Seeder
             ]),
             3 => MembershipPlan::create([
                 'name' => '3 Months', 'description' => 'Full gym access for three months.',
-                'billing_cycle' => 'monthly', 'price' => 4500, 'duration_days' => 90,
+                'billing_cycle' => 'quarterly', 'price' => 4500, 'duration_days' => 90,
             ]),
             6 => MembershipPlan::create([
                 'name' => '6 Months', 'description' => 'Full gym access for six months.',
-                'billing_cycle' => 'monthly', 'price' => 8000, 'duration_days' => 180,
+                'billing_cycle' => 'half_yearly', 'price' => 8000, 'duration_days' => 180,
             ]),
             12 => MembershipPlan::create([
                 'name' => '12 Months', 'description' => 'Full gym access for a year — best value.',
@@ -122,6 +123,31 @@ class DatabaseSeeder extends Seeder
         $members = [];
         foreach ($rows as [$name, $phone, $months, $daysLeft, $due, $method, $emergency]) {
             $members[$name] = $this->enrolMember($plans[$months], $name, $phone, $daysLeft, $due, $method, $emergency);
+        }
+
+        // Profile details for a few members, so the member view has something to show.
+        // [contact + emergency-contact fields on the user, body/fitness/health fields on the profile]
+        $details = [
+            'Aarav Sharma' => [
+                ['gender' => 'male', 'date_of_birth' => '1996-04-12', 'address' => '12 MG Road, Kothrud, Pune', 'emergency_contact_name' => 'Sunita Sharma'],
+                ['height_cm' => 176, 'weight_kg' => 84.5, 'fitness_goal' => 'weight_loss', 'fitness_level' => 'beginner', 'blood_group' => 'B+', 'emergency_contact_relation' => 'Mother', 'occupation' => 'Software engineer', 'preferred_timing' => 'morning', 'referral_source' => 'friend'],
+            ],
+            'Vikram Singh' => [
+                ['gender' => 'male', 'date_of_birth' => '1989-11-03', 'address' => 'B-204, Lake View Apartments, Baner, Pune', 'emergency_contact_name' => 'Neha Singh'],
+                ['height_cm' => 181, 'weight_kg' => 78, 'fitness_goal' => 'muscle_gain', 'fitness_level' => 'advanced', 'blood_group' => 'O+', 'medical_conditions' => 'Old right-shoulder injury — avoid heavy overhead pressing.', 'emergency_contact_relation' => 'Spouse', 'occupation' => 'Business owner', 'preferred_timing' => 'evening', 'referral_source' => 'social_media', 'notes' => 'Trains 5 days a week. Interested in personal training.'],
+            ],
+            'Rohan Mehta' => [
+                ['gender' => 'male', 'date_of_birth' => '2001-07-21', 'address' => 'Hostel 3, College Road, Pune', 'emergency_contact_name' => 'Anil Mehta'],
+                ['height_cm' => 169, 'weight_kg' => 58, 'fitness_goal' => 'strength', 'fitness_level' => 'intermediate', 'blood_group' => 'A+', 'emergency_contact_relation' => 'Father', 'occupation' => 'Student', 'preferred_timing' => 'afternoon', 'referral_source' => 'walk_in'],
+            ],
+            'Samar Khan' => [
+                ['gender' => 'male', 'date_of_birth' => '1993-02-15', 'address' => '7 Station Road, Camp, Pune', 'emergency_contact_name' => 'Zoya Khan'],
+                ['height_cm' => 173, 'weight_kg' => 91, 'fitness_goal' => 'general_fitness', 'fitness_level' => 'beginner', 'blood_group' => 'AB-', 'medical_conditions' => 'Mild asthma — keeps an inhaler in the gym bag. Doctor advised no high-intensity cardio for now.', 'emergency_contact_relation' => 'Sister', 'occupation' => 'Accountant', 'preferred_timing' => 'flexible', 'referral_source' => 'advertisement'],
+            ],
+        ];
+        foreach ($details as $name => [$contact, $profile]) {
+            $members[$name]->update($contact);
+            MemberProfile::create(['user_id' => $members[$name]->id] + $profile);
         }
 
         // The demo login for the member portal.

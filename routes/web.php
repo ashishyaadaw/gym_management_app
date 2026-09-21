@@ -139,6 +139,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/my/clock-out', [StaffAttendanceController::class, 'clockOut']);
             Route::get('/my/payslips', [PayrollController::class, 'mine']);
             Route::get('/members', [MemberController::class, 'index']);
+            Route::get('/members/{member}', [MemberController::class, 'show']);
             Route::post('/attendances/check-in', [AttendanceController::class, 'checkIn']);
             Route::post('/attendances/{attendance}/check-out', [AttendanceController::class, 'checkOut']);
         });
@@ -150,6 +151,7 @@ Route::middleware('auth')->group(function () {
 
             // Walk-in enrolment + renewals
             Route::post('/members', [MemberController::class, 'store']);
+            Route::put('/members/{member}', [MemberController::class, 'update']);
             Route::post('/members/{member}/renew', [MemberController::class, 'renew']);
 
             // Store (POS)

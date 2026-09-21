@@ -7,6 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class MembershipPlan extends Model
 {
+    /**
+     * Billing cycles, in the order they are offered, with the membership length each one starts from
+     * (days; null = no fixed length, e.g. a class pack that is used up instead of expiring).
+     */
+    public const CYCLES = [
+        'monthly' => ['label' => 'Monthly', 'days' => 30],
+        'quarterly' => ['label' => 'Quarterly', 'days' => 90],
+        'half_yearly' => ['label' => 'Half-yearly', 'days' => 180],
+        'yearly' => ['label' => 'Yearly', 'days' => 365],
+        'pay_per_class' => ['label' => 'Per class', 'days' => null],
+    ];
+
     protected $fillable = [
         'name', 'description', 'billing_cycle', 'price',
         'class_credits', 'duration_days', 'features', 'is_active',

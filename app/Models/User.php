@@ -45,6 +45,12 @@ class User extends Authenticatable
         return $this->hasOne(StaffProfile::class);
     }
 
+    /** Body, fitness and health details — present for members whose details have been filled in. */
+    public function memberProfile()
+    {
+        return $this->hasOne(MemberProfile::class);
+    }
+
     public function memberPlans()
     {
         return $this->hasMany(MemberPlan::class);
