@@ -31,18 +31,18 @@ $(function () {
       return '<span class="tabular">' + esc(App.hm(x.worked_minutes)) + '</span> <span class="text-secondary">· ' + (x.present_days + x.half_days) + ' days</span>';
     }
     var bits = ['<span style="color:var(--gf-cash)">P ' + x.present_days + '</span>'];
-    if (x.half_days) { bits.push('<span style="color:#fbbf24">½ ' + x.half_days + '</span>'); }
+    if (x.half_days) { bits.push('<span style="color:var(--gf-warn)">½ ' + x.half_days + '</span>'); }
     if (x.leave_days) { bits.push('<span style="color:var(--gf-upi)">L ' + x.leave_days + '</span>'); }
     if (x.holiday_days) { bits.push('<span style="color:var(--gf-card)">H ' + x.holiday_days + '</span>'); }
-    bits.push('<span style="color:' + (x.absent_days ? '#f87171' : 'inherit') + '">A ' + x.absent_days + '</span>');
-    if (x.late_marks) { bits.push('<span style="color:#fbbf24">Late ' + x.late_marks + '</span>'); }
+    bits.push('<span style="color:' + (x.absent_days ? 'var(--gf-bad)' : 'inherit') + '">A ' + x.absent_days + '</span>');
+    if (x.late_marks) { bits.push('<span style="color:var(--gf-warn)">Late ' + x.late_marks + '</span>'); }
     return '<span class="tabular">' + bits.join(' · ') + '</span><div class="text-secondary" style="font-size:.68rem">' + x.payable_days + ' payable of ' + x.days_in_month + ' days</div>';
   }
 
   function statusPill(r) {
     if (!r.slip) { return '<span class="gf-pill gf-pill--none">Not generated</span>'; }
     if (r.slip.status === 'paid') { return '<span class="gf-pill gf-pill--active">Paid</span>' + (r.slip.paid_on ? '<div class="text-secondary" style="font-size:.68rem">' + esc(App.day(r.slip.paid_on)) + '</div>' : ''); }
-    return '<span class="gf-pill gf-pill--expiring">Draft</span>' + (r.stale ? '<div style="font-size:.68rem;color:#fbbf24">Attendance changed</div>' : '');
+    return '<span class="gf-pill gf-pill--expiring">Draft</span>' + (r.stale ? '<div style="font-size:.68rem;color:var(--gf-warn)">Attendance changed</div>' : '');
   }
 
   function actions(r) {
@@ -96,10 +96,10 @@ $(function () {
         return '<tr' + (r.is_active ? '' : ' class="opacity-75"') + '>' +
           '<td><div class="fw-semibold">' + esc(r.name) + (r.is_active ? '' : ' <span class="gf-pill gf-pill--none">Left</span>') + '</div>' +
             '<div class="text-secondary" style="font-size:.7rem">' + esc(r.employee_code) + ' · ' + (r.pay_type === 'hourly' ? money(r.base_salary) + '/hr' : money(r.base_salary) + '/mo') + '</div>' +
-            $.map(r.warnings, function (w) { return '<div style="font-size:.7rem;color:#fbbf24">⚠ ' + esc(w) + '</div>'; }).join('') + '</td>' +
+            $.map(r.warnings, function (w) { return '<div style="font-size:.7rem;color:var(--gf-warn)">⚠ ' + esc(w) + '</div>'; }).join('') + '</td>' +
           '<td>' + attendanceText(r) + '</td>' +
           '<td class="text-end tabular">' + esc(money(x.gross_pay)) + '</td>' +
-          '<td class="text-end tabular d-none d-md-table-cell" style="color:' + (deductions ? '#f87171' : 'inherit') + '">' + (deductions ? '−' + esc(money(deductions)) : '—') + '</td>' +
+          '<td class="text-end tabular d-none d-md-table-cell" style="color:' + (deductions ? 'var(--gf-bad)' : 'inherit') + '">' + (deductions ? '−' + esc(money(deductions)) : '—') + '</td>' +
           '<td class="text-end tabular d-none d-md-table-cell" style="color:' + (Number(x.bonus) ? 'var(--gf-cash)' : 'inherit') + '">' + (Number(x.bonus) ? '+' + esc(money(x.bonus)) : '—') + '</td>' +
           '<td class="text-end fw-bold tabular">' + esc(money(net)) + (r.slip ? '' : '<div class="text-secondary fw-normal" style="font-size:.66rem">preview</div>') + '</td>' +
           '<td>' + statusPill(r) + '</td>' +
@@ -161,7 +161,7 @@ $(function () {
   function paintNet() {
     var x = adjusting.slip;
     var net = Number(x.gross_pay) - Number(x.late_deduction) + (Number($adj.find('[name="bonus"]').val()) || 0) - (Number($adj.find('[name="other_deduction"]').val()) || 0);
-    $adj.find('.js-net').text(money(net)).css('color', net < 0 ? '#f87171' : 'var(--gf-gold)');
+    $adj.find('.js-net').text(money(net)).css('color', net < 0 ? 'var(--gf-bad)' : 'var(--gf-gold)');
   }
   $adj.find('[name="bonus"], [name="other_deduction"]').on('input', paintNet);
 

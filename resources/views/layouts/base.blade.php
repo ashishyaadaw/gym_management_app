@@ -10,6 +10,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
     <title>@yield('title', 'Dashboard') &middot; {{ config('app.name') }}</title>
+    <script>
+        // Apply the saved light/dark choice before the stylesheet paints (dark is the default). See App.setTheme in js/app.js.
+        (function () {
+            var theme = 'dark';
+            try { theme = localStorage.getItem('gf-theme') === 'light' ? 'light' : 'dark'; } catch (e) {}
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'light' ? '#f5f5f3' : '#121212');
+        })();
+    </script>
 
     <link rel="manifest" href="{{ route('manifest') }}">
     <link rel="icon" type="image/png" href="{{ asset('images/icon-192.png') }}">

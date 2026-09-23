@@ -51,13 +51,13 @@ $(function () {
         var pct = Math.min(100, Math.round(p.used_count / p.usage_limit * 100));
         return '<div class="mt-2"><div class="d-flex justify-content-between small mb-1"><span>' + p.used_count + ' / ' + p.usage_limit + ' signed up</span>' +
           '<span class="text-secondary">' + p.remaining + ' left</span></div>' +
-          '<div class="progress" style="height:.45rem;background:rgba(255,255,255,.08)"><div class="progress-bar" style="width:' + pct + '%;background:' +
-          (pct >= 100 ? '#f87171' : 'var(--gf-gold)') + '"></div></div></div>';
+          '<div class="progress" style="height:.45rem;background:rgba(var(--gf-tint-rgb),.08)"><div class="progress-bar" style="width:' + pct + '%;background:' +
+          (pct >= 100 ? 'var(--gf-bad)' : 'var(--gf-gold)') + '"></div></div></div>';
       }
       return '<div class="small mt-2">' + p.used_count + ' signed up <span class="text-secondary">· no limit</span></div>';
     }
     if (p.remaining !== null && p.remaining !== undefined) {
-      return '<div class="small mt-2" style="color:' + (p.remaining <= 5 ? '#fbbf24' : 'var(--gf-muted)') + '">' +
+      return '<div class="small mt-2" style="color:' + (p.remaining <= 5 ? 'var(--gf-warn)' : 'var(--gf-muted)') + '">' +
         (p.remaining === 0 ? 'Sold out' : p.remaining + ' spot' + (p.remaining === 1 ? '' : 's') + ' left') + '</div>';
     }
     return '';
@@ -191,7 +191,7 @@ $(function () {
         .fail(function (xhr) {
           if (mine !== seq) { return; }
           applied = null;
-          $msg.css('color', '#f87171').text(App.errorMessage(xhr, 'That coupon can\'t be used.'));
+          $msg.css('color', 'var(--gf-bad)').text(App.errorMessage(xhr, 'That coupon can\'t be used.'));
           paintTotals();
         });
     });

@@ -36,7 +36,8 @@ class CollectionService
                 'time' => $p->paid_at->toIso8601String(),
                 'date' => $p->paid_at->toDateString(),
                 'hour' => $p->paid_at->hour,
-                'label' => $p->user?->name ?? 'Member',
+                // No member = a lump sum entered from an old daybook on the Past Records page.
+                'label' => $p->user?->name ?? ($p->user_id ? 'Member' : 'Lump sum'),
                 'detail' => $p->memberPlan?->plan?->name ?? ($p->notes ?: 'Payment'),
                 'type' => $p->member_plan_id ? 'membership' : 'payment',
                 'method' => self::bucket($p->method),

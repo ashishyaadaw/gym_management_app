@@ -8,8 +8,11 @@ class Payment extends Model
 {
     protected $fillable = [
         'user_id', 'member_plan_id', 'invoice_number', 'amount', 'method',
-        'status', 'due_date', 'paid_at', 'transaction_reference', 'notes',
+        'status', 'due_date', 'paid_at', 'transaction_reference', 'notes', 'source', 'recorded_by',
     ];
+
+    /** source value for payments entered on the Past Records page (the gym's history before this software). */
+    public const SOURCE_HISTORY = 'history';
 
     protected function casts(): array
     {
@@ -28,6 +31,11 @@ class Payment extends Model
     public function memberPlan()
     {
         return $this->belongsTo(MemberPlan::class);
+    }
+
+    public function recorder()
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 
     protected static function booted()

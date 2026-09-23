@@ -27,7 +27,7 @@ $(function () {
         '<div class="small text-secondary">' + esc(m.phone || 'No phone') + '</div></div>' +
       '<div class="small d-none d-md-block" style="min-width:12rem"><div>' + sub + '</div><div class="text-secondary">' + (ends || '&nbsp;') + '</div></div>' +
       '<div class="d-flex flex-column align-items-start align-items-sm-end gap-1">' + App.statusPill(m.status) +
-        (m.due > 0 ? '<span class="small" style="color:#fbbf24">Due ' + esc(App.money(m.due)) + '</span>' : '') + '</div>' +
+        (m.due > 0 ? '<span class="small" style="color:var(--gf-warn)">Due ' + esc(App.money(m.due)) + '</span>' : '') + '</div>' +
       '<div class="d-flex gap-1 ms-auto">' +
         '<button class="btn btn-light btn-sm js-view" data-id="' + esc(m.id) + '" title="View details">' +
           '<svg class="gf-ico gf-ico--sm"><use href="#i-eye"/></svg></button>' +
@@ -123,7 +123,7 @@ $(function () {
     var lastVisit = m && m.last_visit ? App.day(String(m.last_visit).replace(' ', 'T')) : null;
     var dob = d.date_of_birth ? App.day(d.date_of_birth) + (d.age !== null ? ' (' + d.age + ' yrs)' : '') : null;
     var medical = d.medical_conditions
-      ? '<div class="mt-1" style="white-space:pre-wrap;color:#fbbf24">' + esc(d.medical_conditions) + '</div>'
+      ? '<div class="mt-1" style="white-space:pre-wrap;color:var(--gf-warn)">' + esc(d.medical_conditions) + '</div>'
       : '<div class="mt-1 text-secondary">None recorded</div>';
 
     return '<div class="d-flex flex-wrap align-items-center gap-3 mb-3">' +
@@ -246,7 +246,7 @@ $(function () {
       refresh();
     });
     $paid.on('input', refresh);
-    $form.find('[name="joining_date"]').on('change', refresh);
+    $form.find('[name="joining_date"], [name="start_date"]').on('change', refresh);
 
     // A coupon is checked against the server (plan, dates, limits) before it changes the price.
     $code.on('input', function () {
@@ -271,7 +271,7 @@ $(function () {
         .fail(function (xhr) {
           if (mine !== seq) { return; }
           resetCoupon();
-          $msg.css('color', '#f87171').text(App.errorMessage(xhr, 'That coupon can\'t be used.'));
+          $msg.css('color', 'var(--gf-bad)').text(App.errorMessage(xhr, 'That coupon can\'t be used.'));
           refresh();
         });
     });
@@ -293,10 +293,32 @@ $(function () {
   var $renew = $('#renew-form');
   var renewMember = null;
   wire($renew, function () {
-    // A renewal starts when the current plan ends (or today if it already ended).
+    // An explicit start date (e.g. a past plan entered late) wins; otherwise the renewal starts
+    // when the current plan ends, or today if it already ended.
+    var picked = $renew.find('[name="start_date"]').val();
+    if (picked) { return picked; }
     var end = renewMember && renewMember.ends_on ? App.parse(renewMember.ends_on) : null;
     return end && end > new Date() ? end : new Date();
   }, function () { return renewMember ? renewMember.id : null; });
+
+  /**
+   * Payment date follows the plan start date while that is in the past (a late entry is usually paid on
+   * the day it started), until the user sets the payment date themselves.
+   */
+  function linkPaymentDate($form, startField) {
+    var $paid = $form.find('[name="paid_on"]');
+    $paid.on('input change', function () { $paid.data('touched', true); });
+    $form.find('[name="' + startField + '"]').on('change', function () {
+      if ($paid.data('touched')) { return; }
+      var start = $(this).val();
+      $paid.val(start && start < App.today() ? start : App.today());
+    });
+  }
+  function resetPaymentDate($form) {
+    $form.find('[name="paid_on"]').val(App.today()).data('touched', false);
+  }
+  linkPaymentDate($add, 'joining_date');
+  linkPaymentDate($renew, 'start_date');
 
   var plansReady = App.get('/membership-plans').done(function (res) {
     plans = $.grep(res, function (p) { return p.sale_status === 'on_sale'; });
@@ -309,6 +331,7 @@ $(function () {
     $add[0].reset();
     App.formError($add, '');
     $add.find('[name="joining_date"]').val(App.today());
+    resetPaymentDate($add);
     $add.data('resetCoupon')();
     $('#add-more').removeClass('show');   // start with the optional details folded away
     if (plans.length) { $add.find('[name="membership_plan_id"]').val(plans[0].id).trigger('change'); }
@@ -326,6 +349,7 @@ $(function () {
       phone: $.trim($add.find('[name="phone"]').val()),
       email: $.trim($add.find('[name="email"]').val()) || null,
       joining_date: $add.find('[name="joining_date"]').val() || null,
+      paid_on: $add.find('[name="paid_on"]').val() || null,
       membership_plan_id: App.num($add.find('[name="membership_plan_id"]').val()),
       paid: App.num($add.find('[name="paid"]').val()),
       method: $add.find('[name="method"]').val(),
@@ -350,6 +374,7 @@ $(function () {
     App.formError($edit, '');
     $edit.find('[name="name"]').val(editing.name);
     $edit.find('[name="phone"]').val(editing.phone || '');
+    $edit.find('[name="joined_on"]').val(editing.joined_on || '');
     fillDetails($edit, editing);
     // Swap modals only once the first has finished closing, so the backdrops don't fight.
     $('#view-modal').one('hidden.bs.modal', function () { App.modal('#edit-modal').show(); });
@@ -361,10 +386,14 @@ $(function () {
     var $btn = $edit.find('button[type="submit"]').prop('disabled', true);
     App.formError($edit, '');
 
-    App.api('PUT', '/members/' + editing.id, $.extend({
+    var payload = $.extend({
       name: $.trim($edit.find('[name="name"]').val()),
       phone: $.trim($edit.find('[name="phone"]').val())
-    }, readDetails($edit)))
+    }, readDetails($edit));
+    // Owner only (the server ignores it from anyone else; the field is only rendered for the owner).
+    if (window.MembersPage.canEditJoinDate) { payload.joined_on = $edit.find('[name="joined_on"]').val() || null; }
+
+    App.api('PUT', '/members/' + editing.id, payload)
       .done(function () {
         App.modal('#edit-modal').hide();
         App.flash('Details saved.');
@@ -379,6 +408,8 @@ $(function () {
     renewMember = m;
     App.formError($renew, '');
     $renew.data('resetCoupon')();
+    $renew.find('[name="start_date"]').val('');
+    resetPaymentDate($renew);
     $renew.find('.js-renew-avatar').text(App.initials(m.name));
     $renew.find('.js-renew-name').text(m.name);
     $renew.find('.js-renew-current').text(m.ends_on ? (m.status === 'expired' ? 'Expired ' : 'Ends ') + App.day(m.ends_on) : 'No membership yet');
@@ -397,11 +428,16 @@ $(function () {
       membership_plan_id: App.num($renew.find('[name="membership_plan_id"]').val()),
       paid: App.num($renew.find('[name="paid"]').val()),
       method: $renew.find('[name="method"]').val(),
-      coupon_code: $.trim($renew.find('[name="coupon_code"]').val()) || null
+      coupon_code: $.trim($renew.find('[name="coupon_code"]').val()) || null,
+      start_date: $renew.find('[name="start_date"]').val() || null,
+      paid_on: $renew.find('[name="paid_on"]').val() || null
     })
       .done(function () {
         App.modal('#renew-modal').hide();
-        App.flash(renewMember.name + '’s membership renewed.');
+        var paidOn = $renew.find('[name="paid_on"]').val();
+        App.flash(paidOn && paidOn !== App.today()
+          ? 'Plan recorded for ' + renewMember.name + ' — payment dated ' + App.day(paidOn) + '.'
+          : renewMember.name + '’s membership renewed.');
         load();
       })
       .fail(function (xhr) { App.formError($renew, App.errorMessage(xhr, 'Could not renew.')); })

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ReportsOnDateRange;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\StockMovement;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 /** Front-desk POS, sales history/reports and stock control for supplements, accessories and apparel. */
 class StoreController extends Controller
 {
+    use ReportsOnDateRange;
+
     // ---------- Catalogue ----------
 
     public function products(Request $request)
@@ -277,25 +280,7 @@ class StoreController extends Controller
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    // ---------- Helpers ----------
-
-    /** @return array{0: Carbon, 1: Carbon} start of ?from … end of ?to (default: today), at most a year apart. */
-    private function range(Request $request): array
-    {
-        $request->validate(['from' => 'nullable|date', 'to' => 'nullable|date']);
-
-        $to = ($request->filled('to') ? Carbon::parse($request->query('to')) : today())->endOfDay();
-        $from = ($request->filled('from') ? Carbon::parse($request->query('from')) : $to->copy())->startOfDay();
-        if ($to->lt($from)) {
-            $to = $from->copy()->endOfDay();
-        }
-
-        if ($from->diffInDays($to) > 366) {
-            abort(response()->json(['message' => 'Choose a range of a year or less.'], 422));
-        }
-
-        return [$from, $to];
-    }
+    // ---------- Helpers (range() and csvSafe() come from ReportsOnDateRange) ----------
 
     private function logMovement(Product $product, Request $request, int $change, string $reason, ?string $note = null, ?int $saleId = null): void
     {
@@ -307,12 +292,6 @@ class StoreController extends Controller
             'reason' => $reason,
             'note' => $note,
         ]);
-    }
-
-    /** Stop spreadsheet apps from running a cell that starts with = + - @ as a formula. */
-    private function csvSafe(string $value): string
-    {
-        return preg_match('/^[=+\-@\t\r]/', $value) ? "'".$value : $value;
     }
 
     private function validated(Request $request): array

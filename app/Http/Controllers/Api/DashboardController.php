@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Booking;
 use App\Models\ClassSchedule;
 use App\Models\Equipment;
+use App\Models\Expense;
 use App\Models\MemberPlan;
 use App\Models\Payment;
 use App\Models\Product;
@@ -49,6 +50,12 @@ class DashboardController extends Controller
             'low_stock' => Product::where('is_active', true)->where('stock', '<=', config('gym.low_stock'))
                 ->orderBy('stock')->orderBy('name')->limit(8)->get(['id', 'name', 'stock']),
             'collection' => $this->collection->day(today()),
+            // Money paid out today, so "cash in hand" can match what is actually in the drawer.
+            'expenses_today' => [
+                'total' => round((float) Expense::whereDate('spent_on', today())->sum('amount'), 2),
+                'cash' => round((float) Expense::whereDate('spent_on', today())->where('method', 'cash')->sum('amount'), 2),
+                'count' => Expense::whereDate('spent_on', today())->count(),
+            ],
             'last_7_days' => $this->collection->recentDays(7),
             'month_revenue' => $this->collection->totals($monthTxns)['total'],
             'pending_dues' => (float) Payment::where('status', 'pending')->sum('amount'),
@@ -103,8 +110,8 @@ class DashboardController extends Controller
         $txns = $this->collection->transactions(now()->subMonths(5)->startOfMonth(), now()->endOfMonth())
             ->groupBy(fn ($t) => substr($t['date'], 0, 7));
         $joined = User::where('role', 'member')
-            ->where('created_at', '>=', now()->subMonths(5)->startOfMonth())
-            ->pluck('created_at')
+            ->whereDate('joined_on', '>=', now()->subMonths(5)->startOfMonth())
+            ->pluck('joined_on')
             ->countBy(fn ($d) => $d->format('Y-m'));
 
         return collect(range(5, 0))->map(function (int $ago) use ($txns, $joined) {

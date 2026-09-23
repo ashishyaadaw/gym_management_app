@@ -104,7 +104,7 @@ $(function () {
           '<td><div class="fw-medium tabular">' + esc(s.receipt_number) + '</div><div class="text-secondary" style="font-size:.72rem">' +
             esc(App.day(s.sold_at)) + ' · ' + esc(App.time(s.sold_at)) + '</div></td>' +
           '<td style="max-width:18rem"><div class="gf-truncate' + (voided ? ' text-decoration-line-through' : '') + '">' + esc(lines) + '</div>' +
-            (voided ? '<div style="font-size:.72rem;color:#f87171">Voided' + (s.void_reason ? ' — ' + esc(s.void_reason) : '') + '</div>' : '') + '</td>' +
+            (voided ? '<div style="font-size:.72rem;color:var(--gf-bad)">Voided' + (s.void_reason ? ' — ' + esc(s.void_reason) : '') + '</div>' : '') + '</td>' +
           '<td class="d-none d-md-table-cell">' + esc(s.member ? s.member.name : 'Walk-in') + '</td>' +
           '<td>' + App.methodPill(s.method) + '</td>' +
           '<td class="text-end fw-bold tabular' + (voided ? ' text-decoration-line-through' : '') + '">' + esc(money(s.total)) + '</td>' +

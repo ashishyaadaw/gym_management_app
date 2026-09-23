@@ -157,7 +157,7 @@ $(function () {
         return '<div class="gf-list-item d-flex align-items-center justify-content-between gap-3 py-2' + (voided ? ' opacity-50' : '') + '">' +
           '<div class="gf-truncate"><div class="fw-medium gf-truncate' + (voided ? ' text-decoration-line-through' : '') + '">' + esc(lines) + '</div>' +
           '<div class="small text-secondary">' + esc(s.receipt_number) + ' · ' + esc(App.time(s.sold_at)) + ' · ' + esc(s.member ? s.member.name : 'Walk-in') +
-            (s.seller ? ' · by ' + esc(s.seller.name) : '') + (voided ? ' · <span style="color:#f87171">Voided</span>' : '') + '</div></div>' +
+            (s.seller ? ' · by ' + esc(s.seller.name) : '') + (voided ? ' · <span style="color:var(--gf-bad)">Voided</span>' : '') + '</div></div>' +
           '<div class="d-flex align-items-center gap-2">' + App.methodPill(s.method) +
           '<span class="fw-bold tabular' + (voided ? ' text-decoration-line-through' : '') + '">' + esc(App.money(s.total)) + '</span>' +
           '<a class="btn btn-light btn-sm" target="_blank" rel="noopener" href="' + esc(App.url('/sales/' + s.id + '/receipt')) + '" title="Receipt">' +
@@ -227,7 +227,7 @@ $(function () {
           return '<div class="gf-list-item d-flex justify-content-between gap-2 py-1">' +
             '<span class="gf-truncate"><span class="text-secondary">' + esc(App.day(m.created_at)) + '</span> · ' + esc(REASON[m.reason] || m.reason) +
               (m.note ? ' <span class="text-secondary">(' + esc(m.note) + ')</span>' : '') + '</span>' +
-            '<b class="tabular" style="color:' + (m.change > 0 ? 'var(--gf-cash)' : '#f87171') + '">' + (m.change > 0 ? '+' : '') + m.change + '</b></div>';
+            '<b class="tabular" style="color:' + (m.change > 0 ? 'var(--gf-cash)' : 'var(--gf-bad)') + '">' + (m.change > 0 ? '+' : '') + m.change + '</b></div>';
         }).join('') : '<div class="text-secondary">No movements recorded yet.</div>');
       });
     }

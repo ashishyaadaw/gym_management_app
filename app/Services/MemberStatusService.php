@@ -73,7 +73,7 @@ class MemberStatusService
                 'days_left' => $days,
                 'status' => $status,
                 'last_visit' => $m->last_visit,
-                'joined_on' => $m->created_at?->toDateTimeString(),
+                'joined_on' => ($m->joined_on ?? $m->created_at)?->toDateString(),
                 'due' => (float) ($m->due ?? 0),
             ];
         });

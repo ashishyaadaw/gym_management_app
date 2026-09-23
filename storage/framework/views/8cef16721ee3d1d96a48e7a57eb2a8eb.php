@@ -1,3 +1,5 @@
+
+
 <?php
     $user = auth()->user();
     $role = $user->role;
@@ -9,6 +11,8 @@
         ['my.attendance', 'My Attendance', 'clock', ['admin', 'trainer', 'receptionist']],
         ['store', 'POS Store', 'bag', ['admin', 'receptionist']],
         ['sales', 'Sales', 'chart', ['admin', 'receptionist']],
+        ['collection', 'Collection', 'trend', ['admin', 'receptionist']],
+        ['expenses', 'Expenses', 'wallet', ['admin', 'receptionist']],
         ['classes', 'Classes', 'calendar', ['admin', 'trainer', 'member', 'receptionist']],
         ['bookings', 'Bookings', 'bookmark', ['admin', 'trainer', 'member', 'receptionist']],
         ['plans', 'Membership Plans', 'tag', ['admin', 'trainer', 'member', 'receptionist']],
@@ -18,6 +22,7 @@
         ['staff', 'Staff', 'briefcase', ['admin']],
         ['staff.attendance', 'Staff Attendance', 'clock', ['admin']],
         ['payroll', 'Payroll', 'cash', ['admin']],
+        ['past.records', 'Past Records', 'history', ['admin']],
     ];
 ?>
 
@@ -28,9 +33,15 @@
                 <svg class="gf-ico"><use href="#i-menu"/></svg>
             </button>
             <div class="gf-brand-logo gf-brand-logo--sm" role="img" aria-label="<?php echo e(config('app.name')); ?>"></div>
-            <button type="button" class="btn btn-light btn-sm js-logout" aria-label="Log out">
-                <svg class="gf-ico"><use href="#i-logout"/></svg>
-            </button>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light btn-sm js-theme-toggle" aria-label="Switch light / dark mode" title="Switch light / dark mode">
+                    <svg class="gf-ico gf-when-dark"><use href="#i-sun"/></svg>
+                    <svg class="gf-ico gf-when-light"><use href="#i-moon"/></svg>
+                </button>
+                <button type="button" class="btn btn-light btn-sm js-logout" aria-label="Log out">
+                    <svg class="gf-ico"><use href="#i-logout"/></svg>
+                </button>
+            </div>
         </header>
 
         <div class="gf-sidebar">
@@ -64,6 +75,10 @@
                             <div class="fw-semibold gf-truncate"><?php echo e($user->name); ?></div>
                             <div class="small text-secondary text-capitalize"><?php echo e($role); ?></div>
                         </div>
+                        <button type="button" class="btn btn-light w-100 mb-2 js-theme-toggle d-flex align-items-center justify-content-center gap-2">
+                            <span class="gf-when-dark d-inline-flex align-items-center gap-2"><svg class="gf-ico gf-ico--sm"><use href="#i-sun"/></svg> Light mode</span>
+                            <span class="gf-when-light d-inline-flex align-items-center gap-2"><svg class="gf-ico gf-ico--sm"><use href="#i-moon"/></svg> Dark mode</span>
+                        </button>
                         <button type="button" class="btn btn-light w-100 js-logout d-flex align-items-center justify-content-center gap-2">
                             <svg class="gf-ico gf-ico--sm"><use href="#i-logout"/></svg> Log out
                         </button>

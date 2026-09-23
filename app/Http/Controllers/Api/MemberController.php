@@ -20,8 +20,7 @@ use Illuminate\Validation\Rule;
 /** Front-desk member list, walk-in enrolment, member details and renewals. */
 class MemberController extends Controller
 {
-    /** Walk-ins without an email get "<phone>@members.gym.local" so the required, unique column is filled. */
-    private const DERIVED_EMAIL_DOMAIN = '@members.gym.local';
+    private const DERIVED_EMAIL_DOMAIN = User::DERIVED_EMAIL_DOMAIN;
 
     public function __construct(
         private MemberStatusService $statuses,
@@ -58,18 +57,19 @@ class MemberController extends Controller
             'name' => 'required|string|max:255',
             'phone' => ['required', 'regex:/^\d{10}$/', 'unique:users,phone'],
             'email' => 'nullable|email|unique:users,email',
-            'joining_date' => 'nullable|date',
+            'joining_date' => 'nullable|date|after:2000-01-01',
             'membership_plan_id' => 'required|exists:membership_plans,id',
             'paid' => 'required|numeric|min:0',
             'method' => 'required|in:cash,upi,card,bank_transfer',
             'coupon_code' => 'nullable|string|max:40',
-        ] + $this->detailRules(), ['phone.regex' => 'Phone must be exactly 10 digits.']);
+        ] + $this->paidOnRule() + $this->detailRules(), ['phone.regex' => 'Phone must be exactly 10 digits.'] + $this->paidOnMessages());
 
         $plan = MembershipPlan::findOrFail($data['membership_plan_id']);
         $start = isset($data['joining_date']) ? Carbon::parse($data['joining_date']) : today();
+        $paidOn = isset($data['paid_on']) ? Carbon::parse($data['paid_on']) : null;
 
         // One transaction: if the plan is full or the coupon is refused, the new member is not left behind.
-        $member = DB::transaction(function () use ($data, $plan, $start) {
+        $member = DB::transaction(function () use ($data, $plan, $start, $paidOn) {
             $member = User::create([
                 'name' => $data['name'],
                 'phone' => $data['phone'],
@@ -77,11 +77,12 @@ class MemberController extends Controller
                 'email' => $data['email'] ?? $data['phone'].self::DERIVED_EMAIL_DOMAIN,
                 'password' => Hash::make(Str::random(16)),
                 'role' => 'member',
+                'joined_on' => $start,
             ]);
 
             $this->saveDetails($member, $data);
 
-            $this->billing->enroll($member, $plan, $start, (float) $data['paid'], $data['method'], $data['coupon_code'] ?? null);
+            $this->billing->enroll($member, $plan, $start, (float) $data['paid'], $data['method'], $data['coupon_code'] ?? null, $paidOn);
 
             return $member;
         });
@@ -103,7 +104,7 @@ class MemberController extends Controller
             // Walk-ins get a made-up address (see store()); only show one they actually gave.
             'email' => str_ends_with($member->email, self::DERIVED_EMAIL_DOMAIN) ? null : $member->email,
             'is_active' => $member->is_active,
-            'joined_on' => $member->created_at?->toDateString(),
+            'joined_on' => ($member->joined_on ?? $member->created_at)?->toDateString(),
             'gender' => $member->gender,
             'date_of_birth' => $member->date_of_birth?->toDateString(),
             'age' => $member->date_of_birth?->age,
@@ -116,17 +117,31 @@ class MemberController extends Controller
         ]);
     }
 
-    /** Edit a member's name, phone and details. Plans, payments and login are not touched here. */
+    /**
+     * Edit a member's name, phone and details. Plans, payments and login are not touched here.
+     * The owner (admin) may also correct the join date; from anyone else it is ignored.
+     */
     public function update(Request $request, User $member)
     {
         abort_unless($member->isMember(), 404);
 
+        $isAdmin = $request->user()->isAdmin();
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => ['required', 'regex:/^\d{10}$/', Rule::unique('users', 'phone')->ignore($member->id)],
-        ] + $this->detailRules(), ['phone.regex' => 'Phone must be exactly 10 digits.']);
+        ] + ($isAdmin ? ['joined_on' => 'sometimes|required|date|before_or_equal:today|after:1900-01-01'] : [])
+          + $this->detailRules(), [
+            'phone.regex' => 'Phone must be exactly 10 digits.',
+            'joined_on.before_or_equal' => 'The join date cannot be in the future.',
+        ]);
 
-        DB::transaction(fn () => $this->saveDetails($member, $data));
+        DB::transaction(function () use ($member, $data, $isAdmin) {
+            if ($isAdmin && isset($data['joined_on'])) {
+                $member->update(['joined_on' => $data['joined_on']]);
+            }
+            $this->saveDetails($member, $data);
+        });
 
         return response()->json(['id' => $member->id]);
     }
@@ -164,7 +179,10 @@ class MemberController extends Controller
         MemberProfile::updateOrCreate(['user_id' => $member->id], Arr::only($data, MemberProfile::FIELDS));
     }
 
-    /** Renew: a new plan starting when the current one ends (or today if it already ended). */
+    /**
+     * Renew: a new plan starting when the current one ends (or today if it already ended).
+     * For a plan bought earlier but entered late, ?start_date and ?paid_on back-date the plan and its payment.
+     */
     public function renew(Request $request, User $member)
     {
         abort_unless($member->isMember(), 404);
@@ -178,19 +196,38 @@ class MemberController extends Controller
             'paid' => 'required|numeric|min:0',
             'method' => 'required|in:cash,upi,card,bank_transfer',
             'coupon_code' => 'nullable|string|max:40',
-        ]);
+            'start_date' => 'nullable|date|after:2000-01-01',
+        ] + $this->paidOnRule(), $this->paidOnMessages());
 
         $plan = MembershipPlan::findOrFail($data['membership_plan_id']);
 
-        $currentEnd = MemberPlan::where('user_id', $member->id)
-            ->where('status', 'active')->max('end_date');
-        $start = $currentEnd && Carbon::parse($currentEnd)->isFuture()
-            ? Carbon::parse($currentEnd)
-            : today();
+        if (isset($data['start_date'])) {
+            $start = Carbon::parse($data['start_date']);
+        } else {
+            $currentEnd = MemberPlan::where('user_id', $member->id)
+                ->where('status', 'active')->max('end_date');
+            $start = $currentEnd && Carbon::parse($currentEnd)->isFuture()
+                ? Carbon::parse($currentEnd)
+                : today();
+        }
 
-        $this->billing->enroll($member, $plan, $start, (float) $data['paid'], $data['method'], $data['coupon_code'] ?? null);
+        $this->billing->enroll(
+            $member, $plan, $start, (float) $data['paid'], $data['method'], $data['coupon_code'] ?? null,
+            isset($data['paid_on']) ? Carbon::parse($data['paid_on']) : null,
+        );
 
         return response()->json(['id' => $member->id]);
+    }
+
+    /** The day the money was received — today unless a past purchase is being entered late. */
+    private function paidOnRule(): array
+    {
+        return ['paid_on' => 'nullable|date|before_or_equal:today|after:2000-01-01'];
+    }
+
+    private function paidOnMessages(): array
+    {
+        return ['paid_on.before_or_equal' => 'The payment date cannot be in the future.'];
     }
 
     /** Switch a member's account off. Everything they have (plans, payments, attendance) is kept. */

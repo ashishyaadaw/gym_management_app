@@ -39,9 +39,11 @@ $(function () {
   }
 
   // ---------- Staff: daily collection ----------
-  function renderCollection(c) {
+  function renderCollection(c, ex) {
     var t = c.totals, ts = c.time_split;
     var bank = t.upi + t.card + t.other;
+    ex = ex || { total: 0, cash: 0, count: 0 };
+    var drawer = t.cash - ex.cash;   // cash collected minus cash paid out today
     var pretty = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
     function slot(ico, tint, label, hours, amount) {
@@ -69,7 +71,7 @@ $(function () {
 
       '<div class="row g-2 g-lg-3">' +
         col('col-6 col-lg-3', kpi('total', 'Today total', money(t.total), t.count + ' txn' + (t.other > 0 ? ' · incl. ' + money(t.other) + ' other' : ''), 'cash')) +
-        col('col-6 col-lg-3', kpi('cash', 'Cash', money(t.cash), 'Cash in hand', 'cash')) +
+        col('col-6 col-lg-3', kpi('cash', 'Cash', money(t.cash), 'Cash collected', 'cash')) +
         col('col-6 col-lg-3', kpi('upi', 'UPI', money(t.upi), 'UPI settlement', 'phone')) +
         col('col-6 col-lg-3', kpi('card', 'Card', money(t.card), 'Card swipe', 'card')) +
       '</div>' +
@@ -77,15 +79,23 @@ $(function () {
       '<div class="row g-3 mt-1">' +
         col('col-lg-8', '<div class="gf-card-inset p-3 h-100"><div class="gf-eyebrow mb-3">Time split</div><div class="row g-2">' +
           slot('sun', '#fb923c', 'Morning', '5 AM – 12 PM', ts.morning) +
-          slot('sunset', '#fbbf24', 'Afternoon', '12 PM – 5 PM', ts.afternoon) +
+          slot('sunset', 'var(--gf-warn)', 'Afternoon', '12 PM – 5 PM', ts.afternoon) +
           slot('moon', '#818cf8', 'Evening', '5 PM – 5 AM', ts.evening) +
         '</div></div>') +
         col('col-lg-4', '<div class="gf-card-inset p-3 h-100"><div class="gf-eyebrow mb-3">Cash in hand vs bank</div>' +
-          settle('Cash in hand', 'cash', 'cash', t.cash) +
+          settle('Cash in hand', drawer < 0 ? 'bad' : 'cash', 'cash', drawer) +
+          (ex.cash > 0 ? '<div class="text-secondary text-end mb-2" style="font-size:.7rem;margin-top:-.35rem">' +
+            esc(money(t.cash)) + ' collected − ' + esc(money(ex.cash)) + ' cash expenses</div>' : '') +
           settle('UPI', 'upi', 'phone', t.upi) +
           settle('Card', 'card', 'card', t.card) +
           '<div class="d-flex justify-content-between small pt-2 border-top" style="border-color:var(--gf-line-soft)!important">' +
-            '<span class="text-secondary">Total bank settlements</span><span class="fw-bold tabular">' + esc(money(bank)) + '</span></div></div>') +
+            '<span class="text-secondary">Total bank settlements</span><span class="fw-bold tabular">' + esc(money(bank)) + '</span></div>' +
+          '<div class="d-flex justify-content-between align-items-center small pt-2">' +
+            '<a class="text-secondary text-decoration-none" href="' + esc(App.url('/expenses')) + '">Spent today' +
+              (ex.count ? ' · ' + ex.count + ' entr' + (ex.count === 1 ? 'y' : 'ies') : '') + '</a>' +
+            '<span class="d-inline-flex align-items-center gap-2"><span class="fw-bold tabular" style="color:' + (ex.total ? 'var(--gf-bad)' : 'inherit') + '">' +
+              esc(money(ex.total)) + '</span>' +
+              '<a class="btn btn-light btn-sm py-0 px-2" href="' + esc(App.url('/expenses?add=1')) + '" title="Add expense">' + icon('plus', 'gf-ico--sm') + '</a></span></div></div>') +
       '</div>' +
 
       '<div class="gf-card-inset p-3 mt-3"><div class="gf-eyebrow mb-2">Today’s transactions</div>' + txnTable(c.transactions, 8) + '</div>' +
@@ -148,8 +158,8 @@ $(function () {
 
   function lowStockCard(rows) {
     if (!rows.length) { return ''; }
-    return '<div class="card mb-4" style="border-color:rgba(248,113,113,.3)"><div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-3">' +
-      '<h3 class="h6 mb-0 d-flex align-items-center gap-2" style="color:#f87171">' + icon('box', 'gf-ico--sm') + 'Low stock</h3>' +
+    return '<div class="card mb-4" style="border-color:rgba(var(--gf-bad-rgb),.3)"><div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-3">' +
+      '<h3 class="h6 mb-0 d-flex align-items-center gap-2" style="color:var(--gf-bad)">' + icon('box', 'gf-ico--sm') + 'Low stock</h3>' +
       '<div class="d-flex flex-wrap gap-2 flex-grow-1">' + $.map(rows, function (p) {
         return '<span class="gf-pill gf-pill--' + (p.stock <= 0 ? 'low' : 'expiring') + '">' + esc(p.name) + ' · ' + (p.stock <= 0 ? 'out of stock' : p.stock + ' left') + '</span>';
       }).join('') + '</div>' +
@@ -158,9 +168,9 @@ $(function () {
 
   function renderAttention(s) {
     return lowStockCard(s.low_stock) + '<div class="row g-3 mb-4">' +
-      attentionCard('Expiring soon', 'alert', '#fbbf24', s.expiring_members, 'expiring', 'All good — nobody is about to expire.') +
-      attentionCard('Expired · need renewal', 'refresh', '#f87171', s.expired_members, 'expired', 'No lapsed memberships.') +
-      attentionCard('Inactive ' + App.inactiveDays + '+ days', 'users', '#a1a1aa', s.inactive_members, 'inactive', 'Everyone has visited recently.') +
+      attentionCard('Expiring soon', 'alert', 'var(--gf-warn)', s.expiring_members, 'expiring', 'All good — nobody is about to expire.') +
+      attentionCard('Expired · need renewal', 'refresh', 'var(--gf-bad)', s.expired_members, 'expired', 'No lapsed memberships.') +
+      attentionCard('Inactive ' + App.inactiveDays + '+ days', 'users', 'var(--gf-muted)', s.inactive_members, 'inactive', 'Everyone has visited recently.') +
     '</div>';
   }
 
@@ -169,14 +179,14 @@ $(function () {
     var today = App.today();
     return '<div class="card mb-4"><div class="card-body">' +
       '<div class="d-flex align-items-center justify-content-between mb-2"><h3 class="h6 mb-0">Last 7 days</h3>' +
-      '<span class="gf-eyebrow">Click View for day details</span></div>' +
+      '<a class="btn btn-light btn-sm" href="' + esc(App.url('/collection')) + '">Full collection report</a></div>' +
       '<div class="mb-3">' + bars(days, 'total', 'label', short) + '</div>' +
       '<div class="table-responsive"><table class="table table-hover align-middle small"><thead><tr>' +
         '<th>Date</th><th class="text-end">Total</th><th class="text-end d-none d-md-table-cell">Cash</th><th class="text-end d-none d-md-table-cell">UPI</th>' +
         '<th class="text-end d-none d-md-table-cell">Card</th><th class="text-end">Txn</th><th></th></tr></thead><tbody>' +
       $.map(days.slice().reverse(), function (d) {
         var isToday = d.date === today;
-        return '<tr' + (isToday ? ' style="background:rgba(212,175,55,.06)"' : '') + '><td class="fw-medium">' + esc(d.label) +
+        return '<tr' + (isToday ? ' style="background:rgba(var(--gf-gold-rgb),.06)"' : '') + '><td class="fw-medium">' + esc(d.label) +
           (isToday ? ' <span class="badge text-bg-primary ms-1">Today</span>' : '') + '</td>' +
           '<td class="text-end fw-bold tabular">' + esc(money(d.total)) + '</td>' +
           '<td class="text-end d-none d-md-table-cell tabular" style="color:var(--gf-cash)">' + esc(money(d.cash)) + '</td>' +
@@ -206,7 +216,7 @@ $(function () {
 
   function renderStaff(s) {
     $('#dashboard-staff').html(
-      renderCollection(s.collection) + renderMemberKpis(s) + staffTodayCard(s.staff_today) + renderAttention(s) + renderWeek(s.last_7_days)
+      renderCollection(s.collection, s.expenses_today) + renderMemberKpis(s) + staffTodayCard(s.staff_today) + renderAttention(s) + renderWeek(s.last_7_days)
     );
   }
 
@@ -239,7 +249,7 @@ $(function () {
             '<span style="width:' + pct(split.cash) + '%;background:var(--gf-cash)"></span>' +
             '<span style="width:' + pct(split.upi) + '%;background:var(--gf-upi)"></span>' +
             '<span style="width:' + pct(split.card) + '%;background:var(--gf-card)"></span>' +
-            '<span style="width:' + pct(split.other) + '%;background:#71717a"></span></div>' +
+            '<span style="width:' + pct(split.other) + '%;background:var(--gf-faint)"></span></div>' +
           '<div class="row g-2">' +
             col('col-6 col-lg-3', kpi('cash', 'Cash', money(split.cash), pct(split.cash) + '%')) +
             col('col-6 col-lg-3', kpi('upi', 'UPI', money(split.upi), pct(split.upi) + '%')) +

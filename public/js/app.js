@@ -295,6 +295,29 @@
     });
   });
 
+  // ---------- Light / dark theme (initial value applied inline in layouts/base.blade.php) ----------
+  App.theme = function () {
+    return document.documentElement.getAttribute('data-bs-theme') === 'light' ? 'light' : 'dark';
+  };
+  App.setTheme = function (theme, persist) {
+    theme = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    $('meta[name="theme-color"]').attr('content', theme === 'light' ? '#f5f5f3' : '#121212');
+    if (persist !== false) {
+      try { window.localStorage.setItem('gf-theme', theme); } catch (e) { /* private mode: theme just won't stick */ }
+    }
+    $(document).trigger('gf:theme', [theme]);
+  };
+
+  $(document).on('click', '.js-theme-toggle', function () {
+    App.setTheme(App.theme() === 'light' ? 'dark' : 'light');
+  });
+
+  // Keep other open tabs in step when the theme changes in one of them.
+  $(window).on('storage', function (e) {
+    if (e.originalEvent.key === 'gf-theme') { App.setTheme(e.originalEvent.newValue, false); }
+  });
+
   // ---------- Logout buttons (sidebar + mobile top bar) ----------
   $(document).on('click', '.js-logout', function () {
     App.postPage('/logout').always(function (res) {

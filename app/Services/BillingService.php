@@ -50,10 +50,13 @@ class BillingService
      * Front-desk plans are renewed by hand, so auto-renew is switched off on the
      * new plan and on any earlier plan (otherwise the daily billing run would
      * invoice the old one again).
+     *
+     * Back-dated entries (a plan bought earlier but entered now): pass $paidOn so the money lands on the day it
+     * was actually received in the collection reports. A plan whose period has already ended is saved as expired.
      */
-    public function enroll(User $member, MembershipPlan $plan, Carbon $start, float $paid, string $method, ?string $couponCode = null): MemberPlan
+    public function enroll(User $member, MembershipPlan $plan, Carbon $start, float $paid, string $method, ?string $couponCode = null, ?Carbon $paidOn = null): MemberPlan
     {
-        return DB::transaction(function () use ($member, $plan, $start, $paid, $method, $couponCode) {
+        return DB::transaction(function () use ($member, $plan, $start, $paid, $method, $couponCode, $paidOn) {
             [$plan, $quote] = $this->claim($member, $plan, $couponCode);
 
             if ($paid > $quote['price']) {
@@ -72,12 +75,19 @@ class BillingService
                 'start_date' => $start,
                 'end_date' => $end,
                 'remaining_credits' => $plan->class_credits,
-                'status' => 'active',
+                // A back-dated plan that has already run out is history, not the member's current plan.
+                'status' => $end && $end->lt(today()) ? 'expired' : 'active',
                 'auto_renew' => false,
                 'next_billing_date' => null,
             ]);
 
             $this->redeem($quote['coupon'], $member, $memberPlan, $quote['discount']);
+
+            // Keep the time of day of entry so the dashboard's morning/afternoon/evening split stays plausible.
+            $paidAt = $paidOn && ! $paidOn->isToday() ? $paidOn->copy()->setTimeFrom(now()) : now();
+            $backdated = $paidOn && ! $paidOn->isToday()
+                ? 'Back-dated entry, recorded '.now()->format('d M Y H:i').(auth()->user() ? ' by '.auth()->user()->name : '')
+                : null;
 
             if ($paid > 0) {
                 Payment::create([
@@ -86,8 +96,8 @@ class BillingService
                     'amount' => $paid,
                     'method' => $method,
                     'status' => 'paid',
-                    'paid_at' => now(),
-                    'notes' => $this->couponNote($quote),
+                    'paid_at' => $paidAt,
+                    'notes' => collect([$this->couponNote($quote), $backdated])->filter()->implode(' · ') ?: null,
                 ]);
             }
 
@@ -99,7 +109,7 @@ class BillingService
                     'amount' => $due,
                     'method' => 'other',
                     'status' => 'pending',
-                    'due_date' => now(),
+                    'due_date' => $paidAt,
                     'notes' => 'Balance due',
                 ]);
             }

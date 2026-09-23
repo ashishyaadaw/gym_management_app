@@ -94,7 +94,7 @@ $(function () {
       var lines = NAME[d.state] || '';
       var extra = d.in ? '<span class="text-secondary" style="font-size:.62rem">' + esc(d.in) + (d.out ? '–' + esc(d.out) : '') + '</span>' : '';
       cells.push('<div class="gf-cal-day gf-cal-day--' + d.state + (d.date === today ? ' is-today' : '') + '" title="' + esc(d.note || '') + '">' +
-        '<span class="gf-num">' + d.day + '</span>' + (d.late ? ' <span title="Late" style="color:#f87171">●</span>' : '') +
+        '<span class="gf-num">' + d.day + '</span>' + (d.late ? ' <span title="Late" style="color:var(--gf-bad)">●</span>' : '') +
         '<span class="gf-tag">' + esc(lines) + '</span>' + extra + '</div>');
     });
     $('#cal').html(cells.join(''));

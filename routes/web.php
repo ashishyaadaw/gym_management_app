@@ -3,13 +3,16 @@
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ClassScheduleController;
+use App\Http\Controllers\Api\CollectionReportController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EquipmentController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\GymClassController;
 use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\MemberPlanController;
 use App\Http\Controllers\Api\MembershipPlanController;
+use App\Http\Controllers\Api\PastRecordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\StaffAttendanceController;
@@ -71,6 +74,8 @@ Route::middleware('auth')->group(function () {
     Route::view('/members', 'members')->name('members')->middleware('role:admin,receptionist,trainer');
     Route::view('/store', 'store')->name('store')->middleware('role:admin,receptionist');
     Route::view('/sales', 'sales')->name('sales')->middleware('role:admin,receptionist');
+    Route::view('/collection', 'collection')->name('collection')->middleware('role:admin,receptionist');
+    Route::view('/expenses', 'expenses')->name('expenses')->middleware('role:admin,receptionist');
     Route::get('/sales/{sale}/receipt', fn (StoreSale $sale) => view('receipt', ['sale' => $sale->load('items', 'seller:id,name', 'member:id,name')]))
         ->name('receipt')->middleware('role:admin,receptionist');
 
@@ -90,6 +95,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::view('/equipment', 'equipment')->name('equipment');
         Route::view('/users', 'users')->name('users');
+        Route::view('/past-records', 'past-records')->name('past.records');
     });
 
     // ----- JSON endpoints used by the pages' jQuery -----
@@ -148,6 +154,8 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:receptionist,admin')->group(function () {
             Route::get('/dashboard/staff', [DashboardController::class, 'staffSummary']);
             Route::get('/collection', [DashboardController::class, 'collection']);
+            Route::get('/collection/report', [CollectionReportController::class, 'report']);
+            Route::get('/collection/export', [CollectionReportController::class, 'export']);
 
             // Walk-in enrolment + renewals
             Route::post('/members', [MemberController::class, 'store']);
@@ -163,6 +171,13 @@ Route::middleware('auth')->group(function () {
 
             Route::post('/payments', [PaymentController::class, 'store']);
             Route::post('/payments/{payment}/mark-paid', [PaymentController::class, 'markPaid']);
+
+            // Expenses — the desk records them; edit/delete rules (own entries, same day) are in the controller
+            Route::get('/expenses', [ExpenseController::class, 'index']);
+            Route::get('/expenses/export', [ExpenseController::class, 'export']);
+            Route::post('/expenses', [ExpenseController::class, 'store']);
+            Route::put('/expenses/{expense}', [ExpenseController::class, 'update']);
+            Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
         });
 
         // ---------- Admin only ----------
@@ -212,6 +227,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/store/products/{product}/stock', [StoreController::class, 'adjustStock']);
             Route::get('/store/products/{product}/movements', [StoreController::class, 'movements']);
             Route::post('/store/sales/{sale}/void', [StoreController::class, 'void']);
+
+            // Past records: the gym's history before this software (bulk entry + undo)
+            Route::get('/past-records', [PastRecordController::class, 'index']);
+            Route::post('/past-records', [PastRecordController::class, 'store']);
+            Route::delete('/past-records/{payment}', [PastRecordController::class, 'destroy']);
 
             // Payments admin actions
             Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund']);

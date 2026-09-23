@@ -12,16 +12,30 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'phone', 'password', 'role', 'avatar', 'gender',
         'date_of_birth', 'address', 'emergency_contact_name',
-        'emergency_contact_phone', 'is_active',
+        'emergency_contact_phone', 'is_active', 'joined_on',
     ];
 
     protected $hidden = ['password', 'remember_token'];
+
+    /** Walk-ins without an email get "<phone>@members.gym.local" so the required, unique email column is filled. */
+    public const DERIVED_EMAIL_DOMAIN = '@members.gym.local';
+
+    protected static function booted(): void
+    {
+        // Every new member gets a join date (walk-in, self sign-up or the Users page); walk-ins may pass a back-dated one.
+        static::creating(function (User $user) {
+            if ($user->role === 'member' && ! $user->joined_on) {
+                $user->joined_on = today();
+            }
+        });
+    }
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'date_of_birth' => 'date',
+            'joined_on' => 'date',
             'is_active' => 'boolean',
             'password' => 'hashed',
         ];

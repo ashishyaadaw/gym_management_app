@@ -31,9 +31,9 @@
         <div class="card-body small text-secondary">
             <div class="gf-eyebrow mb-2">How salary is worked out</div>
             <ul class="mb-0 ps-3">
-                <li><b class="text-light">Monthly pay</b> = salary × payable days ÷ days in the month. Payable days = present + ½ per half day + paid leave + holidays + weekly offs. Absences and past working days nobody marked earn nothing; days before joining or after leaving are excluded.</li>
-                <li><b class="text-light">Late deduction</b>: every {{ config('gym.late_marks_per_half_day') ?: '—' }} late arrivals in a month cost half a day's pay (clocking in more than {{ config('gym.late_grace_minutes') }} min after the shift start is late).</li>
-                <li><b class="text-light">Hourly pay</b> = hours worked (from clock-in / clock-out) × hourly rate.</li>
+                <li><b class="text-body">Monthly pay</b> = salary × payable days ÷ days in the month. Payable days = present + ½ per half day + paid leave + holidays + weekly offs. Absences and past working days nobody marked earn nothing; days before joining or after leaving are excluded.</li>
+                <li><b class="text-body">Late deduction</b>: every {{ config('gym.late_marks_per_half_day') ?: '—' }} late arrivals in a month cost half a day's pay (clocking in more than {{ config('gym.late_grace_minutes') }} min after the shift start is late).</li>
+                <li><b class="text-body">Hourly pay</b> = hours worked (from clock-in / clock-out) × hourly rate.</li>
                 <li>Net pay = earned − late deduction + bonus − other deduction. A month can be generated once it has ended; a paid payslip is final.</li>
             </ul>
         </div>

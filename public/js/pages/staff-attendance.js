@@ -64,9 +64,9 @@ $(function () {
           return '<td class="' + wknd + (d.date === todayStr ? ' gf-today' : '') + '">' + cell + '</td>';
         }).join('') +
         '<td class="gf-sum">' + s.present + '</td><td class="gf-sum">' + s.half_day + '</td>' +
-        '<td class="gf-sum" style="color:' + (s.absent ? '#f87171' : 'inherit') + '">' + s.absent + '</td><td class="gf-sum">' + s.leave + '</td>' +
-        '<td class="gf-sum" style="color:' + (s.late ? '#fbbf24' : 'inherit') + '">' + s.late + '</td>' +
-        '<td class="gf-sum" style="color:' + (s.unmarked ? '#fbbf24' : 'inherit') + '">' + s.unmarked + '</td>' +
+        '<td class="gf-sum" style="color:' + (s.absent ? 'var(--gf-bad)' : 'inherit') + '">' + s.absent + '</td><td class="gf-sum">' + s.leave + '</td>' +
+        '<td class="gf-sum" style="color:' + (s.late ? 'var(--gf-warn)' : 'inherit') + '">' + s.late + '</td>' +
+        '<td class="gf-sum" style="color:' + (s.unmarked ? 'var(--gf-warn)' : 'inherit') + '">' + s.unmarked + '</td>' +
         '<td class="gf-sum">' + (s.minutes ? esc(App.hm(s.minutes)) : '—') + '</td></tr>';
     }).join('');
 

@@ -80,8 +80,13 @@
                                 <input name="phone" class="form-control" inputmode="numeric" maxlength="10" placeholder="9876543210" required>
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label small fw-medium">Joining date</label>
+                                <label class="form-label small fw-medium">Joining / plan start date</label>
                                 <input name="joining_date" type="date" class="form-control">
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-medium">Payment date</label>
+                                <input name="paid_on" type="date" class="form-control" max="{{ today()->toDateString() }}">
+                                <div class="form-text">For an old purchase entered late, the day the money was received.</div>
                             </div>
                             <div class="col-sm-6">
                                 <label class="form-label small fw-medium">Plan *</label>
@@ -159,6 +164,13 @@
                                 <label class="form-label small fw-medium">Phone * (10 digits)</label>
                                 <input name="phone" class="form-control" inputmode="numeric" maxlength="10" required>
                             </div>
+                            @if (auth()->user()->isAdmin())
+                                <div class="col-sm-6">
+                                    <label class="form-label small fw-medium">Member since (join date)</label>
+                                    <input name="joined_on" type="date" class="form-control" max="{{ today()->toDateString() }}" required>
+                                    <div class="form-text">Only changes the date shown as “Member since”. Plans and payments stay as they are.</div>
+                                </div>
+                            @endif
                             @include('partials.member-profile-fields')
                         </div>
                         <p class="gf-error text-danger small mt-3 mb-0 d-none" role="alert"></p>
@@ -176,7 +188,7 @@
             <div class="modal-dialog modal-dialog-centered">
                 <form id="renew-form" class="modal-content" novalidate>
                     <div class="modal-header">
-                        <h2 class="modal-title h6">Renew membership</h2>
+                        <h2 class="modal-title h6">Renew / add plan</h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -217,6 +229,16 @@
                                 <label class="form-label small fw-medium">Balance due</label>
                                 <input class="form-control js-due" readonly value="—">
                             </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-medium">Plan start date</label>
+                                <input name="start_date" type="date" class="form-control">
+                                <div class="form-text">Leave empty to start when the current plan ends.</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-medium">Payment date</label>
+                                <input name="paid_on" type="date" class="form-control" max="{{ today()->toDateString() }}">
+                                <div class="form-text">Change only for a past purchase entered late.</div>
+                            </div>
                             <div class="col-12">
                                 <div class="gf-card-inset p-3 small d-flex justify-content-between">
                                     <span class="text-secondary">New expiry</span>
@@ -241,6 +263,7 @@
         window.MembersPage = {
             canWrite: @json($canWrite),
             canDeactivate: @json(auth()->user()->isAdmin()),
+            canEditJoinDate: @json(auth()->user()->isAdmin()),
             labels: {
                 goal: @json(\App\Models\MemberProfile::GOALS),
                 level: @json(\App\Models\MemberProfile::LEVELS),
