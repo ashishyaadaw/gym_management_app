@@ -15,11 +15,13 @@ use App\Http\Controllers\Api\MembershipPlanController;
 use App\Http\Controllers\Api\PastRecordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\RegistrationLinkController;
 use App\Http\Controllers\Api\StaffAttendanceController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\JoinController;
 use App\Models\Payslip;
 use App\Models\StoreSale;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +60,10 @@ Route::middleware('guest')->group(function () {
     Route::view('/register', 'auth.register')->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });
+
+// ---------- One-time registration link (made by the front desk; open to anyone who has it) ----------
+Route::get('/join/{token}', [JoinController::class, 'show'])->name('join')->middleware('throttle:30,1');
+Route::post('/join/{token}', [JoinController::class, 'store'])->name('join.store')->middleware('throttle:10,1');
 
 // ---------- Authenticated ----------
 Route::middleware('auth')->group(function () {
@@ -161,6 +167,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/members', [MemberController::class, 'store']);
             Route::put('/members/{member}', [MemberController::class, 'update']);
             Route::post('/members/{member}/renew', [MemberController::class, 'renew']);
+
+            // One-time self-registration links for new members (they register without a plan)
+            Route::get('/registration-links', [RegistrationLinkController::class, 'index']);
+            Route::post('/registration-links', [RegistrationLinkController::class, 'store']);
+            Route::post('/registration-links/{link}/revoke', [RegistrationLinkController::class, 'revoke']);
 
             // Store (POS)
             Route::get('/store/products', [StoreController::class, 'products']);

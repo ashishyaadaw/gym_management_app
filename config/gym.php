@@ -13,6 +13,9 @@ return [
     // Members with no check-in for this many days show up as "inactive".
     'inactive_days' => (int) env('GYM_INACTIVE_DAYS', 7),
 
+    // A one-time sign-up link (Members → Invite link) stops working after this many hours.
+    'registration_link_hours' => (int) env('GYM_REGISTRATION_LINK_HOURS', 48),
+
     // Products at or below this stock level are flagged "low stock" in the store.
     'low_stock' => (int) env('GYM_LOW_STOCK', 3),
 

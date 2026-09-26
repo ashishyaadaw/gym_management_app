@@ -55,6 +55,7 @@ $(function () {
         $('[data-count="active"]').text(c.active);
         $('[data-count="expiring"]').text(c.expiring);
         $('[data-count="expired"]').text(c.expired);
+        $('[data-count="none"]').text(c.none);
         $('[data-count="deactivated"]').text(c.deactivated);
 
         $list.html(res.data.length
@@ -443,6 +444,112 @@ $(function () {
       .fail(function (xhr) { App.formError($renew, App.errorMessage(xhr, 'Could not renew.')); })
       .always(function () { $btn.prop('disabled', false); });
   });
+
+  // ---------- One-time registration links ----------
+  var $invite = $('#invite-form');
+  var $inviteBody = $('#invite-body');
+  var LINK_PILL = { pending: 'active', used: 'upi', expired: 'expired', revoked: 'deactivated' };
+  var LINK_LABEL = { pending: 'Unused', used: 'Used', expired: 'Expired', revoked: 'Revoked' };
+  var links = {};
+
+  function inviteWa(url, name, phone) {
+    var digits = String(phone || '').replace(/\D/g, '');
+    if (digits.length === 10) { digits = (App.countryCode || '') + digits; }
+    var text = 'Hi' + (name ? ' ' + name : '') + ', welcome to ' + (App.brand || 'the gym') +
+      '! Please fill in your details to register: ' + url + ' (this link works once).';
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) { return $.when(navigator.clipboard.writeText(text)); }
+    // On a plain-http LAN address the clipboard API is unavailable: fall back to a hidden textarea.
+    var $t = $('<textarea readonly style="position:fixed;opacity:0"></textarea>').val(text).appendTo('body');
+    $t[0].select();
+    var ok = document.execCommand('copy');
+    $t.remove();
+    return ok ? $.Deferred().resolve().promise() : $.Deferred().reject().promise();
+  }
+
+  function linkRow(l) {
+    var when = l.status === 'used'
+      ? 'Registered ' + (l.member ? esc(l.member.name) + ' · ' : '') + esc(App.date(l.used_at))
+      : l.status === 'revoked'
+        ? 'Made ' + esc(App.date(l.created_at))
+        : (l.status === 'pending' ? 'Expires ' : 'Expired ') + esc(App.date(l.expires_at));
+    return '<div class="gf-list-item d-flex align-items-center gap-2 py-2 small">' +
+      '<div class="flex-grow-1" style="min-width:0">' +
+        '<div class="fw-medium gf-truncate">' + esc(l.label || 'No name') + '</div>' +
+        '<div class="text-secondary gf-truncate">' + when + (l.created_by ? ' · by ' + esc(l.created_by) : '') + '</div></div>' +
+      '<span class="gf-pill gf-pill--' + LINK_PILL[l.status] + '">' + LINK_LABEL[l.status] + '</span>' +
+      (l.status === 'pending'
+        ? '<button type="button" class="btn btn-light btn-sm js-link-copy" data-id="' + esc(l.id) + '">Copy</button>' +
+          '<button type="button" class="btn btn-light btn-sm js-link-revoke" data-id="' + esc(l.id) + '" title="Revoke">' +
+          '<svg class="gf-ico gf-ico--sm"><use href="#i-ban"/></svg></button>'
+        : '') +
+      '</div>';
+  }
+
+  function loadLinks() {
+    return App.get('/registration-links')
+      .done(function (res) {
+        links = {};
+        $.each(res.data, function (_, l) { links[l.id] = l; });
+        $('#invite-list').html(res.data.length ? $.map(res.data, linkRow).join('') : '<div class="gf-empty">No links yet.</div>');
+      })
+      .fail(function (xhr) {
+        $('#invite-list').html('<div class="gf-empty text-danger">' + esc(App.errorMessage(xhr, 'Could not load links.')) + '</div>');
+      });
+  }
+
+  $('#btn-invite').on('click', function () {
+    $invite[0].reset();
+    App.formError($inviteBody, '');
+    $('#invite-new').addClass('d-none');
+    loadLinks();
+    App.modal('#invite-modal').show();
+  });
+
+  $invite.on('submit', function (e) {
+    e.preventDefault();
+    var $btn = $invite.find('button[type="submit"]').prop('disabled', true);
+    var name = $.trim($invite.find('[name="label"]').val());
+    var phone = $.trim($invite.find('[name="phone"]').val());
+    App.formError($inviteBody, '');
+
+    App.post('/registration-links', { label: [name, phone].filter(Boolean).join(' · ') || null })
+      .done(function (l) {
+        $('#invite-new').removeClass('d-none');
+        $('#invite-new .js-invite-url').val(l.url);
+        $('#invite-new .js-invite-wa').attr('href', inviteWa(l.url, name, phone));
+        loadLinks();
+      })
+      .fail(function (xhr) { App.formError($inviteBody, App.errorMessage(xhr, 'Could not create the link.')); })
+      .always(function () { $btn.prop('disabled', false); });
+  });
+
+  $('#invite-new').on('click', '.js-invite-copy', function () {
+    copyText($('#invite-new .js-invite-url').val())
+      .done(function () { App.flash('Link copied.'); })
+      .fail(function () { $('#invite-new .js-invite-url').trigger('select'); });
+  });
+
+  $('#invite-list').on('click', '.js-link-copy', function () {
+    var l = links[$(this).data('id')];
+    copyText(l.url)
+      .done(function () { App.flash('Link copied.'); })
+      .fail(function () { window.prompt('Copy this link:', l.url); });
+  });
+
+  $('#invite-list').on('click', '.js-link-revoke', function () {
+    var l = links[$(this).data('id')];
+    if (!window.confirm('Revoke this link' + (l.label ? ' for ' + l.label : '') + '? It will stop working.')) { return; }
+    App.post('/registration-links/' + l.id + '/revoke')
+      .done(function () { App.flash('Link revoked.'); loadLinks(); })
+      .fail(function (xhr) { App.flash(App.errorMessage(xhr, 'Could not revoke the link.'), 'danger'); });
+  });
+
+  // Someone may have registered through a link while the dialog was open.
+  $('#invite-modal').on('hidden.bs.modal', load);
 
   // ---------- Deep links from the dashboard: /members?add=1 and /members?renew=ID ----------
   var params = new URLSearchParams(window.location.search);

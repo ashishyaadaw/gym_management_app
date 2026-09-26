@@ -1,5 +1,6 @@
 
 <?php
+    $public = $public ?? false;
     use App\Models\MemberProfile;
     $opts = fn (array $list) => collect($list)->map(fn ($label, $value) => '<option value="'.e($value).'">'.e($label).'</option>')->implode('');
 ?>
@@ -27,7 +28,7 @@
     <input name="occupation" class="form-control" maxlength="255" placeholder="e.g. Software engineer">
 </div>
 <div class="col-sm-6">
-    <label class="form-label small fw-medium">How did they hear about us?</label>
+    <label class="form-label small fw-medium">How did <?php echo e($public ? 'you' : 'they'); ?> hear about us?</label>
     <select name="referral_source" class="form-select"><option value="">—</option><?php echo $opts(MemberProfile::SOURCES); ?></select>
 </div>
 
@@ -79,8 +80,10 @@
     <label class="form-label small fw-medium">Medical conditions / injuries</label>
     <textarea name="medical_conditions" class="form-control" rows="2" maxlength="2000" placeholder="Anything a trainer should know: injuries, asthma, heart or blood-pressure issues, allergies, medication…"></textarea>
 </div>
+<?php if (! ($public)): ?>
 <div class="col-12">
     <label class="form-label small fw-medium">Notes</label>
     <textarea name="notes" class="form-control" rows="2" maxlength="2000" placeholder="Internal notes about this member"></textarea>
 </div>
+<?php endif; ?>
 <?php /**PATH D:\00_LARAVEL_PROJECT\gym-management-laravel\gym-management\resources\views/partials/member-profile-fields.blade.php ENDPATH**/ ?>

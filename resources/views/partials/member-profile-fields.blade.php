@@ -1,5 +1,7 @@
-{{-- Member detail inputs, shared by the "Add member" and "Edit member" forms. Every field is optional. Put inside a .row.g-3 --}}
+{{-- Member detail inputs, shared by the "Add member" / "Edit member" forms and the public join page ($public = true:
+     worded for the member, no internal notes). Every field is optional. Put inside a .row.g-3 --}}
 @php
+    $public = $public ?? false;
     use App\Models\MemberProfile;
     $opts = fn (array $list) => collect($list)->map(fn ($label, $value) => '<option value="'.e($value).'">'.e($label).'</option>')->implode('');
 @endphp
@@ -27,7 +29,7 @@
     <input name="occupation" class="form-control" maxlength="255" placeholder="e.g. Software engineer">
 </div>
 <div class="col-sm-6">
-    <label class="form-label small fw-medium">How did they hear about us?</label>
+    <label class="form-label small fw-medium">How did {{ $public ? 'you' : 'they' }} hear about us?</label>
     <select name="referral_source" class="form-select"><option value="">—</option>{!! $opts(MemberProfile::SOURCES) !!}</select>
 </div>
 
@@ -79,7 +81,9 @@
     <label class="form-label small fw-medium">Medical conditions / injuries</label>
     <textarea name="medical_conditions" class="form-control" rows="2" maxlength="2000" placeholder="Anything a trainer should know: injuries, asthma, heart or blood-pressure issues, allergies, medication…"></textarea>
 </div>
+@unless ($public)
 <div class="col-12">
     <label class="form-label small fw-medium">Notes</label>
     <textarea name="notes" class="form-control" rows="2" maxlength="2000" placeholder="Internal notes about this member"></textarea>
 </div>
+@endunless

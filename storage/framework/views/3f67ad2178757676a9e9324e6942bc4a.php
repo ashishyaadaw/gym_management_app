@@ -11,9 +11,14 @@
             <p class="text-secondary small mb-0">Membership status, renewals and WhatsApp reminders</p>
         </div>
         <?php if($canWrite): ?>
-            <button class="btn btn-primary d-inline-flex align-items-center justify-content-center gap-2" type="button" id="btn-add-member">
-                <svg class="gf-ico"><use href="#i-plus"/></svg> Add Member
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-light d-inline-flex align-items-center justify-content-center gap-2 flex-fill" type="button" id="btn-invite">
+                    <svg class="gf-ico"><use href="#i-whatsapp"/></svg> Invite link
+                </button>
+                <button class="btn btn-primary d-inline-flex align-items-center justify-content-center gap-2 flex-fill" type="button" id="btn-add-member">
+                    <svg class="gf-ico"><use href="#i-plus"/></svg> Add Member
+                </button>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -26,7 +31,7 @@
         </div>
         <div class="col-12 col-lg-7">
             <div id="member-filters" class="d-flex flex-wrap gap-2">
-                <?php $__currentLoopData = ['all' => 'All', 'active' => 'Active', 'expiring' => 'Expiring', 'expired' => 'Expired', 'deactivated' => 'Deactivated']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php $__currentLoopData = ['all' => 'All', 'active' => 'Active', 'expiring' => 'Expiring', 'expired' => 'Expired', 'none' => 'No plan', 'deactivated' => 'Deactivated']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <button type="button" class="btn btn-light btn-sm gf-chip <?php echo e($key === 'all' ? 'active' : ''); ?>" data-status="<?php echo e($key); ?>">
                         <?php echo e($label); ?> <span class="badge text-bg-secondary ms-1" data-count="<?php echo e($key); ?>">0</span>
                     </button>
@@ -143,6 +148,52 @@
                         <button type="submit" class="btn btn-primary">Add member</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        
+        <div class="modal fade" id="invite-modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title h6">Registration link</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="invite-body">
+                        <p class="small text-secondary">
+                            Send a new member a link to fill in their own details. Each link registers one person, without a plan,
+                            and expires after <?php echo e(config('gym.registration_link_hours')); ?> hours. Add their plan later with Renew.
+                        </p>
+                        <form id="invite-form" class="row g-2 align-items-end" novalidate>
+                            <div class="col-sm-5">
+                                <label class="form-label small fw-medium">For (optional)</label>
+                                <input name="label" class="form-control" maxlength="200" placeholder="Name">
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label small fw-medium">WhatsApp no. (optional)</label>
+                                <input name="phone" class="form-control" inputmode="numeric" maxlength="10" placeholder="9876543210">
+                            </div>
+                            <div class="col-sm-3">
+                                <button type="submit" class="btn btn-primary w-100">Create link</button>
+                            </div>
+                        </form>
+                        <p class="gf-error text-danger small mt-2 mb-0 d-none" role="alert"></p>
+
+                        <div class="gf-card-inset p-3 mt-3 d-none" id="invite-new">
+                            <div class="gf-eyebrow mb-2">New link</div>
+                            <input class="form-control form-control-sm mb-2 js-invite-url" readonly>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-light btn-sm flex-fill js-invite-copy">Copy link</button>
+                                <a class="btn btn-wa btn-sm flex-fill d-inline-flex align-items-center justify-content-center gap-1 js-invite-wa" target="_blank" rel="noopener">
+                                    <svg class="gf-ico gf-ico--sm"><use href="#i-whatsapp"/></svg> Send on WhatsApp
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="gf-eyebrow mt-4 mb-1">Recent links</div>
+                        <div id="invite-list"><div class="gf-empty">Loading…</div></div>
+                    </div>
+                </div>
             </div>
         </div>
 
